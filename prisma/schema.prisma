@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum StatusAcao {
+  aberta
+  encerrada
+  cancelada
+}
+
+enum TipoMovimentacaoEstoque {
+  entrada
+  saida
+  ajuste
+}
+
+enum TipoContaFinanceira {
+  pagar
+  receber
+  despesa
+}
+
+// ─── Cadastros base ──────────────────────────────────────────────────────────
+
+model Distribuidora {
+  id        String   @id @default(cuid())
+  nome      String
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  acoes   Acao[]
+  merchan Merchan[]
+
+  @@map("distribuidoras")
+}
+
+model Estabelecimento {
+  id        String   @id @default(cuid())
+  nome      String
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  acoes   Acao[]
+  merchan Merchan[]
+
+  @@map("estabelecimentos")
+}
+
+model Degustadora {
+  id        String   @id @default(cuid())
+  nome      String
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  participacoes AcaoProfissional[]
+
+  @@map("degustadoras")
+}
+
+model Fornecedor {
+  id        String   @id @default(cuid())
+  nome      String
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("fornecedores")
+}
+
+model GrupoProduto {
+  id        String   @id @default(cuid())
+  nome      String
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  produtos Produto[]
+
+  @@map("grupos_produto")
+}
+
+model Canal {
+  id        String   @id @default(cuid())
+  nome      String
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("canais")
+}
+
+model Banco {
+  id        String   @id @default(cuid())
+  nome      String
+  codigo    String?
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("bancos")
+}
+
+model Produto {
+  id            String   @id @default(cuid())
+  nome          String
+  unidade       String   @default("un")
+  estoqueMinimo Int      @default(0) @map("estoque_minimo")
+  ativo         Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+
+  grupo   GrupoProduto? @relation(fields: [grupoId], references: [id])
+  grupoId String?       @map("grupo_id")
+
+  acoesProduto  AcaoProduto[]
+  movimentacoes MovimentacaoEstoque[]
+
+  @@map("produtos")
+}
+
+// ─── Ação promocional ────────────────────────────────────────────────────────
+
+model Acao {
+  id      String     @id @default(cuid())
+  titulo  String
+  data    DateTime   @db.Date
+  horario String
+  status  StatusAcao @default(aberta)
+
+  distribuidora   Distribuidora? @relation(fields: [distribuidoraId], references: [id])
+  distribuidoraId String?        @map("distribuidora_id")
+
+  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
+  estabelecimentoId String?          @map("estabelecimento_id")
+  estabelecimentoAvulso String?      @map("estabelecimento_avulso")
+
+  profissionais AcaoProfissional[]
+  produtos      AcaoProduto[]
+
+  criadoEm    DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("acoes")
+}
+
+model AcaoProfissional {
+  id String @id @default(cuid())
+
+  acao   Acao   @relation(fields: [acaoId], references: [id], onDelete: Cascade)
+  acaoId String @map("acao_id")
+
+  degustadora   Degustadora? @relation(fields: [degustadoraId], references: [id])
+  degustadoraId String?      @map("degustadora_id")
+
+  nomeAvulso String? @map("nome_avulso")
+
+  @@map("acao_profissionais")
+}
+
+model AcaoProduto {
+  id String @id @default(cuid())
+
+  acao   Acao   @relation(fields: [acaoId], references: [id], onDelete: Cascade)
+  acaoId String @map("acao_id")
+
+  produto   Produto @relation(fields: [produtoId], references: [id])
+  produtoId String  @map("produto_id")
+
+  quantidadePlanejada Int @map("quantidade_planejada")
+
+  @@map("acao_produtos")
+}
+
+// ─── Estoque ─────────────────────────────────────────────────────────────────
+
+model MovimentacaoEstoque {
+  id         String                  @id @default(cuid())
+  tipo       TipoMovimentacaoEstoque
+  quantidade Int
+  observacao String?
+  criadoEm  DateTime                @default(now()) @map("criado_em")
+
+  produto   Produto @relation(fields: [produtoId], references: [id])
+  produtoId String  @map("produto_id")
+
+  @@map("movimentacoes_estoque")
+}
+
+// ─── Financeiro ──────────────────────────────────────────────────────────────
+
+model ContaFinanceira {
+  id        String              @id @default(cuid())
+  descricao String
+  valor     Decimal             @db.Decimal(12, 2)
+  tipo      TipoContaFinanceira
+  vencimento DateTime           @db.Date
+  pago      Boolean             @default(false)
+  criadoEm DateTime            @default(now()) @map("criado_em")
+
+  @@map("contas_financeiras")
+}
+
+model DespesaOperacional {
+  id        String   @id @default(cuid())
+  descricao String
+  valor     Decimal  @db.Decimal(12, 2)
+  data      DateTime @db.Date
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("despesas_operacionais")
+}
+
+// ─── Merchan ─────────────────────────────────────────────────────────────────
+
+model Merchan {
+  id         String   @id @default(cuid())
+  data       DateTime @db.Date
+  observacao String?
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  distribuidora   Distribuidora?   @relation(fields: [distribuidoraId], references: [id])
+  distribuidoraId String?          @map("distribuidora_id")
+
+  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
+  estabelecimentoId String?          @map("estabelecimento_id")
+  estabelecimentoAvulso String?      @map("estabelecimento_avulso")
+
+  @@map("merchan")
+}
+
+// ─── Pessoal ─────────────────────────────────────────────────────────────────
+
+model Compromisso {
+  id        String   @id @default(cuid())
+  titulo    String
+  data      DateTime @db.Date
+  horario   String?
+  privado   Boolean  @default(true)
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("compromissos")
+}
+
+model Rota {
+  id        String   @id @default(cuid())
+  descricao String
+  data      DateTime @db.Date
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  @@map("rotas")
+}
