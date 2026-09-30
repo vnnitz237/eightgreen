@@ -1,13 +1,9 @@
--- Criação do schema completo do Eight Green
--- Execute este SQL no Editor SQL do Supabase
-
--- ─── Enums ───────────────────────────────────────────────────────────────────
+-- Schema Eight Green
+-- Execute no SQL Editor do Supabase
 
 CREATE TYPE "StatusAcao" AS ENUM ('aberta', 'encerrada', 'cancelada');
 CREATE TYPE "TipoMovimentacaoEstoque" AS ENUM ('entrada', 'saida', 'ajuste');
 CREATE TYPE "TipoContaFinanceira" AS ENUM ('pagar', 'receber', 'despesa');
-
--- ─── Cadastros base ──────────────────────────────────────────────────────────
 
 CREATE TABLE "distribuidoras" (
     "id" TEXT NOT NULL,
@@ -74,8 +70,6 @@ CREATE TABLE "produtos" (
     CONSTRAINT "produtos_pkey" PRIMARY KEY ("id")
 );
 
--- ─── Ação promocional ────────────────────────────────────────────────────────
-
 CREATE TABLE "acoes" (
     "id" TEXT NOT NULL,
     "titulo" TEXT NOT NULL,
@@ -106,8 +100,6 @@ CREATE TABLE "acao_produtos" (
     CONSTRAINT "acao_produtos_pkey" PRIMARY KEY ("id")
 );
 
--- ─── Estoque ─────────────────────────────────────────────────────────────────
-
 CREATE TABLE "movimentacoes_estoque" (
     "id" TEXT NOT NULL,
     "tipo" "TipoMovimentacaoEstoque" NOT NULL,
@@ -117,8 +109,6 @@ CREATE TABLE "movimentacoes_estoque" (
     "produto_id" TEXT NOT NULL,
     CONSTRAINT "movimentacoes_estoque_pkey" PRIMARY KEY ("id")
 );
-
--- ─── Financeiro ──────────────────────────────────────────────────────────────
 
 CREATE TABLE "contas_financeiras" (
     "id" TEXT NOT NULL,
@@ -140,8 +130,6 @@ CREATE TABLE "despesas_operacionais" (
     CONSTRAINT "despesas_operacionais_pkey" PRIMARY KEY ("id")
 );
 
--- ─── Merchan ─────────────────────────────────────────────────────────────────
-
 CREATE TABLE "merchan" (
     "id" TEXT NOT NULL,
     "data" DATE NOT NULL,
@@ -152,8 +140,6 @@ CREATE TABLE "merchan" (
     "estabelecimento_avulso" TEXT,
     CONSTRAINT "merchan_pkey" PRIMARY KEY ("id")
 );
-
--- ─── Pessoal ─────────────────────────────────────────────────────────────────
 
 CREATE TABLE "compromissos" (
     "id" TEXT NOT NULL,
@@ -173,7 +159,17 @@ CREATE TABLE "rotas" (
     CONSTRAINT "rotas_pkey" PRIMARY KEY ("id")
 );
 
--- ─── Foreign Keys ────────────────────────────────────────────────────────────
+CREATE TABLE "_prisma_migrations" (
+    "id" VARCHAR(36) NOT NULL,
+    "checksum" VARCHAR(64) NOT NULL,
+    "finished_at" TIMESTAMPTZ,
+    "migration_name" VARCHAR(255) NOT NULL,
+    "logs" TEXT,
+    "rolled_back_at" TIMESTAMPTZ,
+    "started_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "applied_steps_count" INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT "_prisma_migrations_pkey" PRIMARY KEY ("id")
+);
 
 ALTER TABLE "produtos" ADD CONSTRAINT "produtos_grupo_id_fkey"
     FOREIGN KEY ("grupo_id") REFERENCES "grupos_produto"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -204,17 +200,3 @@ ALTER TABLE "merchan" ADD CONSTRAINT "merchan_distribuidora_id_fkey"
 
 ALTER TABLE "merchan" ADD CONSTRAINT "merchan_estabelecimento_id_fkey"
     FOREIGN KEY ("estabelecimento_id") REFERENCES "estabelecimentos"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- ─── Tabela de controle de migrations (Prisma) ────────────────────────────────
-
-CREATE TABLE "_prisma_migrations" (
-    "id" VARCHAR(36) NOT NULL,
-    "checksum" VARCHAR(64) NOT NULL,
-    "finished_at" TIMESTAMPTZ,
-    "migration_name" VARCHAR(255) NOT NULL,
-    "logs" TEXT,
-    "rolled_back_at" TIMESTAMPTZ,
-    "started_at" TIMESTAMPTZ NOT NULL DEFAULT now(),
-    "applied_steps_count" INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT "_prisma_migrations_pkey" PRIMARY KEY ("id")
-);
