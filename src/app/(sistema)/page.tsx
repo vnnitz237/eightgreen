@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Dashboard } from "@/funcionalidades/dashboard/dashboard";
 import { buscarDadosDashboard } from "@/funcionalidades/dashboard/consultas";
 

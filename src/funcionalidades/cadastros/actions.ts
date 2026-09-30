@@ -62,6 +62,11 @@ export async function atualizarFornecedor(id: string, formData: FormData) {
   revalidatePath("/cadastros/fornecedores");
 }
 
+export async function toggleAtivoFornecedor(id: string, ativo: boolean) {
+  await prisma.fornecedor.update({ where: { id }, data: { ativo } });
+  revalidatePath("/cadastros/fornecedores");
+}
+
 // ─── Produtos ─────────────────────────────────────────────────────────────────
 
 const produtoSchema = z.object({
@@ -90,6 +95,11 @@ export async function atualizarProduto(id: string, formData: FormData) {
     grupoId: formData.get("grupoId") || null,
   });
   await prisma.produto.update({ where: { id }, data: dados });
+  revalidatePath("/cadastros/produtos");
+}
+
+export async function toggleAtivoProduto(id: string, ativo: boolean) {
+  await prisma.produto.update({ where: { id }, data: { ativo } });
   revalidatePath("/cadastros/produtos");
 }
 
