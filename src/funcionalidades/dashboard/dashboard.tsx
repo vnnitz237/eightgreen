@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CalendarDays, ChevronRight, Plus, UsersRound } from "lucide-react";
+import { Activity, ArrowUpRight, CalendarClock, CalendarDays, CheckCircle2, ChevronRight, Plus, UsersRound, XCircle } from "lucide-react";
 import type { AcaoPromocional } from "@/funcionalidades/acoes/tipos";
 import { filtrarAcoesPorPeriodo, resumirAcoes } from "@/funcionalidades/acoes/consultas";
 import { periodoSchema } from "@/funcionalidades/acoes/schemas";
@@ -27,6 +27,10 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque }: Props) {
   const totalEstoque = saldoEstoque.reduce((soma, item) => soma + item.quantidade, 0);
   const itensBaixos = saldoEstoque.filter((item) => item.quantidade < item.minimo).length;
   const maiorSaldo = Math.max(1, ...saldoEstoque.map((item) => item.quantidade));
+  const totalGlobal = acoesIniciais.length;
+  const abertasGlobal = acoesIniciais.filter((a) => a.status === "aberta").length;
+  const encerradasGlobal = acoesIniciais.filter((a) => a.status === "encerrada").length;
+  const canceladasGlobal = acoesIniciais.filter((a) => a.status === "cancelada").length;
 
   function aplicarFiltro(evento: React.FormEvent) {
     evento.preventDefault();
@@ -46,6 +50,13 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque }: Props) {
         {erro && <small role="alert">{erro}</small>}
       </form>
       <Link className="acao-capsula" href="/acoes/nova"><Plus size={18}/>Nova ação</Link>
+    </section>
+
+    <section className="kpis" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }} aria-label="Resumo geral">
+      <article><div className="kpi-icone azul"><Activity/></div><div><span>Total de ações</span><strong>{totalGlobal}</strong><small>Todos os registros</small></div></article>
+      <article><div className="kpi-icone amarelo"><CalendarClock/></div><div><span>Ações abertas</span><strong>{abertasGlobal}</strong><small>{totalGlobal ? Math.round(abertasGlobal / totalGlobal * 100) : 0}% do total</small></div></article>
+      <article><div className="kpi-icone verde"><CheckCircle2/></div><div><span>Ações encerradas</span><strong>{encerradasGlobal}</strong><small>{totalGlobal ? Math.round(encerradasGlobal / totalGlobal * 100) : 0}% do total</small></div></article>
+      <article><div className="kpi-icone vermelho"><XCircle/></div><div><span>Ações canceladas</span><strong>{canceladasGlobal}</strong><small>{totalGlobal ? Math.round(canceladasGlobal / totalGlobal * 100) : 0}% do total</small></div></article>
     </section>
 
     <section className="grid-referencia">
