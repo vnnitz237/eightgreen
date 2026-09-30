@@ -12,8 +12,10 @@ export async function buscarDadosDashboard(): Promise<{
   acoes: AcaoPromocional[];
   saldoEstoque: ItemSaldoEstoque[];
 }> {
-  const [acoesDb, produtosDb] = await Promise.all([
-    prisma.acao.findMany({
+  // O PostgreSQL embarcado usado no desenvolvimento local não aceita duas
+  // instruções preparadas simultâneas na mesma conexão. As consultas são
+  // independentes, mas executadas em sequência para manter compatibilidade.
+  const acoesDb = await prisma.acao.findMany({
       include: {
         distribuidora: true,
         estabelecimento: true,
@@ -21,12 +23,11 @@ export async function buscarDadosDashboard(): Promise<{
         produtos: { include: { produto: true } },
       },
       orderBy: { data: "desc" },
-    }),
-    prisma.produto.findMany({
+    });
+  const produtosDb = await prisma.produto.findMany({
       include: { movimentacoes: true },
       orderBy: { nome: "asc" },
-    }),
-  ]);
+    });
 
   const acoes: AcaoPromocional[] = acoesDb.map((acao) => ({
     id: acao.id,

@@ -89,7 +89,7 @@ export function ListaAcoes({ acoes }: { acoes: AcaoPromocional[] }) {
         ) : (
           <div className="estado-vazio">
             <strong>Nenhuma ação{filtro ? ` com status "${filtro}"` : ""}</strong>
-            <span>Clique em "Nova ação" para cadastrar.</span>
+            <span>Clique em &quot;Nova ação&quot; para cadastrar.</span>
           </div>
         )}
       </div>

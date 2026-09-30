@@ -2,31 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
-import { gruposNavegacao } from "@/conteudos/navegacao";
+import { Boxes, CalendarDays, CircleDollarSign, Gauge, Settings2, UsersRound, X } from "lucide-react";
+
+const destinos = [
+  { rotulo: "Visão geral", href: "/", icone: Gauge },
+  { rotulo: "Ações", href: "/acoes", icone: CalendarDays },
+  { rotulo: "Estoque", href: "/estoque/saldo", icone: Boxes },
+  { rotulo: "Financeiro", href: "/financeiro/conta-corrente", icone: CircleDollarSign },
+];
 
 export function Sidebar({ aberta, fechar }: { aberta: boolean; fechar: () => void }) {
   const pathname = usePathname();
   return <>
-    {aberta && <button className="overlay" aria-label="Fechar navegação" onClick={fechar} />}
-    <aside className={`sidebar ${aberta ? "sidebar-aberta" : ""}`}>
-      <div className="marca">
-        <div className="marca-simbolo" aria-hidden="true">8</div>
-        <div><strong>Eight Green</strong><span>Gestão promocional</span></div>
-        <button className="fechar-menu" onClick={fechar} aria-label="Fechar menu"><X size={20}/></button>
-      </div>
-      <nav aria-label="Navegação principal">
-        {gruposNavegacao.map((grupo) => <div className="nav-grupo" key={grupo.titulo}>
-          <p>{grupo.titulo}</p>
-          {grupo.itens.map(({ rotulo, href, icone: Icone }) => {
-            const ativo = href === "/" ? pathname === "/" : pathname.startsWith(href.split("/").slice(0, 2).join("/"));
-            return <Link key={href} href={href} className={ativo ? "ativo" : ""} onClick={fechar}>
-              <Icone size={18}/><span>{rotulo}</span>
-            </Link>;
-          })}
-        </div>)}
+    {aberta && <button className="overlay" aria-label="Fechar navegação" onClick={fechar}/>}
+    <aside className={`trilho-lateral ${aberta ? "aberto" : ""}`} aria-label="Atalhos contextuais">
+      <button className="fechar-trilho" onClick={fechar} aria-label="Fechar menu"><X size={19}/></button>
+      <nav className="trilho-grupo">
+        {destinos.map(({ rotulo, href, icone: Icone }) => {
+          const ativo = href === "/" ? pathname === "/" : pathname.startsWith(href.split("/").slice(0,2).join("/"));
+          return <Link key={href} href={href} className={ativo ? "ativo" : ""} aria-label={rotulo} data-tooltip={rotulo} onClick={fechar}><Icone size={20}/></Link>;
+        })}
       </nav>
-      <div className="sidebar-rodape"><span className="ponto"/>Ambiente de demonstração<strong>Etapa 1 · sem dados reais</strong></div>
+      <nav className="trilho-grupo trilho-inferior">
+        <Link href="/pessoal/agenda" aria-label="Equipe e agenda" data-tooltip="Equipe e agenda" onClick={fechar}><UsersRound size={20}/></Link>
+        <Link href="/configuracoes/perfil" aria-label="Configurações" data-tooltip="Configurações" onClick={fechar}><Settings2 size={20}/></Link>
+      </nav>
     </aside>
   </>;
 }
