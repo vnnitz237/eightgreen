@@ -1,3 +1,9 @@
-import { Dashboard } from "@/funcionalidades/dashboard/dashboard";
+export const dynamic = "force-dynamic";
 
-export default function Home() { return <Dashboard/>; }
+import { Dashboard } from "@/funcionalidades/dashboard/dashboard";
+import { buscarDadosDashboard } from "@/funcionalidades/dashboard/consultas";
+
+export default async function Home() {
+  const { acoes, saldoEstoque } = await buscarDadosDashboard();
+  return <Dashboard acoes={acoes} saldoEstoque={saldoEstoque} />;
+}
