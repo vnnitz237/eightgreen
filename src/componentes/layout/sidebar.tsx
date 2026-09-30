@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { LogOut, X } from "lucide-react";
+import { useFormStatus } from "react-dom";
 import { gruposNavegacao } from "@/conteudos/navegacao";
+import { encerrarSessao } from "@/app/actions/autenticacao";
+import type { UsuarioSessao } from "@/tipos/sessao";
 
-export function Sidebar({ aberta, fechar }: { aberta: boolean; fechar: () => void }) {
+function BotaoEncerrar() {
+  const { pending } = useFormStatus();
+  return <button className="botao-encerrar" type="submit" disabled={pending} aria-label="Encerrar sessão">
+    <LogOut size={14}/>{pending ? "Saindo…" : "Sair"}
+  </button>;
+}
+
+export function Sidebar({ aberta, fechar, usuario }: { aberta: boolean; fechar: () => void; usuario: UsuarioSessao }) {
   const pathname = usePathname();
   return <>
     {aberta && <button className="overlay" aria-label="Fechar navegação" onClick={fechar} />}
@@ -26,7 +36,12 @@ export function Sidebar({ aberta, fechar }: { aberta: boolean; fechar: () => voi
           })}
         </div>)}
       </nav>
-      <div className="sidebar-rodape"><span className="ponto"/>Ambiente de demonstração<strong>Etapa 1 · sem dados reais</strong></div>
+      <div className="sidebar-rodape">
+        <span className="ponto"/>
+        <strong>{usuario.name ?? usuario.email}</strong>
+        <span>{usuario.email}</span>
+        <form action={encerrarSessao}><BotaoEncerrar/></form>
+      </div>
     </aside>
   </>;
 }

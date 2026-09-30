@@ -1,6 +1,37 @@
-import Link from "next/link";
-import { LockKeyhole } from "lucide-react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { auth, autenticacaoConfigurada } from "@/autenticacao";
+import { FormularioLogin } from "@/componentes/autenticacao/formulario-login";
 
-export default function Login() {
-  return <main className="login"><section><div className="marca login-marca"><div className="marca-simbolo">8</div><div><strong>Eight Green</strong><span>Gestão promocional</span></div></div><div className="login-icone"><LockKeyhole/></div><h1>Autenticação ainda não conectada</h1><p>Esta entrega é uma demonstração isolada, sem usuários ou dados reais. A autenticação e a autorização no servidor serão implementadas na próxima etapa.</p><Link href="/">Acessar demonstração</Link><small>Ambiente local · Etapa 1</small></section></main>;
+export const metadata: Metadata = { title: "Acessar · Eight Green", description: "Acesso ao sistema de gestão Eight Green" };
+export const dynamic = "force-dynamic";
+
+type SearchParams = Promise<{ error?: string; callbackUrl?: string; retorno?: string }>;
+
+function caminhoSeguro(valor?: string) {
+  if (!valor || !valor.startsWith("/") || valor.startsWith("//")) return "/";
+  return valor;
+}
+
+function mapearErro(error?: string): "configuracao" | "nao-autorizado" | "provedor" | "desconhecido" | undefined {
+  if (error === "AccessDenied") return "nao-autorizado";
+  if (error === "Configuration") return "configuracao";
+  if (error?.startsWith("OAuth")) return "provedor";
+  return error ? "desconhecido" : undefined;
+}
+
+export default async function PaginaLogin({ searchParams }: { searchParams: SearchParams }) {
+  const configurado = autenticacaoConfigurada();
+  if (configurado) {
+    const session = await auth();
+    if (session?.user) redirect("/");
+  }
+  const params = await searchParams;
+  return <main className="login">
+    <FormularioLogin
+      erroInicial={mapearErro(params.error)}
+      retorno={caminhoSeguro(params.callbackUrl ?? params.retorno)}
+      configurado={configurado}
+    />
+  </main>;
 }
