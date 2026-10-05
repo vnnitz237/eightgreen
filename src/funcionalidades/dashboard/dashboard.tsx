@@ -41,7 +41,10 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque }: Props) {
 
   return <div className="dashboard-novo">
     <section className="boas-vindas">
-      <div><span>Operação persistida</span><h1>Olá, <em>Equipe Eight Green</em></h1><p>Visão operacional das ações promocionais e do trabalho em campo.</p></div>
+      <div className="boas-vindas-topo">
+        <div><span>Operação persistida</span><h1>Olá, <em>Equipe Eight Green</em></h1><p>Visão operacional das ações promocionais e do trabalho em campo.</p></div>
+        <Link className="acao-capsula" href="/acoes/nova"><Plus size={18}/>Nova ação</Link>
+      </div>
       <form className="filtro-capsula" onSubmit={aplicarFiltro}>
         <label><span>De</span><input type="date" value={rascunho.inicio} onChange={(e) => setRascunho({ ...rascunho, inicio: e.target.value })}/></label>
         <span aria-hidden="true">—</span>
@@ -49,7 +52,6 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque }: Props) {
         <button type="submit">Aplicar</button>
         {erro && <small role="alert">{erro}</small>}
       </form>
-      <Link className="acao-capsula" href="/acoes/nova"><Plus size={18}/>Nova ação</Link>
     </section>
 
     <section className="kpis" style={{ gridTemplateColumns: "repeat(4, minmax(0, 1fr))" }} aria-label="Resumo geral">
