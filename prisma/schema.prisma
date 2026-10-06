@@ -141,13 +141,14 @@ model Degustadora {
   agencia  String?
   conta    String?
 
-  fornecedor    Fornecedor?       @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  fornecedorId  String?           @map("fornecedor_id")
-  bancoDados    Banco?            @relation(fields: [bancoDadosId], references: [id], onDelete: SetNull)
-  bancoDadosId  String?           @map("banco_dados_id")
-  participacoes AcaoDegustadora[]
-  contasPagar   ContaPagar[]
-  usuario       Usuario?
+  fornecedor       Fornecedor?        @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  fornecedorId     String?            @map("fornecedor_id")
+  bancoDados       Banco?             @relation(fields: [bancoDadosId], references: [id], onDelete: SetNull)
+  bancoDadosId     String?            @map("banco_dados_id")
+  participacoes    AcaoProfissional[]
+  acaoDegustadoras AcaoDegustadora[]
+  contasPagar      ContaPagar[]
+  usuario          Usuario?
 
   @@map("degustadoras")
 }
@@ -298,11 +299,14 @@ model Produto {
 // ─── Ação promocional ────────────────────────────────────────────────────────
 
 model Acao {
-  id      String     @id @default(cuid())
-  titulo  String
-  data    DateTime   @db.Date
-  horario String
-  status  StatusAcao @default(aberta)
+  id          String     @id @default(cuid())
+  numero      String     @unique @default(cuid()) @map("numero")
+  titulo      String
+  data        DateTime   @db.Date
+  dataFim     DateTime?  @db.Date  @map("data_fim")
+  horario     String
+  status      StatusAcao @default(aberta)
+  observacoes String?
 
   distribuidora   Distribuidora? @relation(fields: [distribuidoraId], references: [id])
   distribuidoraId String?        @map("distribuidora_id")
@@ -311,8 +315,9 @@ model Acao {
   estabelecimentoId     String?          @map("estabelecimento_id")
   estabelecimentoAvulso String?          @map("estabelecimento_avulso")
 
-  profissionais AcaoDegustadora[]
-  produtos      AcaoProduto[]
+  profissionais     AcaoProfissional[]
+  produtos          AcaoProduto[]
+  acaoDegustadoras  AcaoDegustadora[]
 
   criadoEm          DateTime           @default(now()) @map("criado_em")
   atualizadoEm      DateTime           @updatedAt @map("atualizado_em")
@@ -322,7 +327,7 @@ model Acao {
   @@map("acoes")
 }
 
-model AcaoDegustadora {
+model AcaoProfissional {
   id String @id @default(cuid())
 
   acao   Acao   @relation(fields: [acaoId], references: [id], onDelete: Cascade)
@@ -348,9 +353,27 @@ model AcaoProduto {
   produto   Produto @relation(fields: [produtoId], references: [id])
   produtoId String  @map("produto_id")
 
-  quantidadePlanejada Decimal @map("quantidade_planejada") @db.Decimal(14, 3)
+  quantidadePlanejada Int     @map("quantidade_planejada")
+  preco               Decimal @default(0) @db.Decimal(10, 2)
 
   @@map("acao_produtos")
+}
+
+model AcaoDegustadora {
+  id String @id @default(cuid())
+
+  acao   Acao   @relation(fields: [acaoId], references: [id], onDelete: Cascade)
+  acaoId String @map("acao_id")
+
+  degustadora   Degustadora @relation(fields: [degustadoraId], references: [id])
+  degustadoraId String      @map("degustadora_id")
+
+  dataTrabalho DateTime @db.Date @map("data_trabalho")
+  horaInicio   String   @map("hora_inicio")
+  horaFim      String   @map("hora_fim")
+  observacoes  String?
+
+  @@map("acao_degustadoras")
 }
 
 // ─── Estoque ─────────────────────────────────────────────────────────────────
@@ -450,8 +473,8 @@ model ContaPagar {
   fornecedorId         String?             @map("fornecedor_id")
   degustadora          Degustadora?        @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
   degustadoraId        String?             @map("degustadora_id")
-  acaoDegustadora      AcaoDegustadora?    @relation(fields: [acaoDegustadoraId], references: [id], onDelete: SetNull)
-  acaoDegustadoraId    String?             @map("acao_degustadora_id")
+  acaoProfissional     AcaoProfissional?   @relation(fields: [acaoProfissionalId], references: [id], onDelete: SetNull)
+  acaoProfissionalId   String?             @map("acao_degustadora_id")
   despesaEmpresarial   DespesaEmpresarial? @relation(fields: [despesaEmpresarialId], references: [id], onDelete: SetNull)
   despesaEmpresarialId String?             @map("despesa_empresarial_id")
 

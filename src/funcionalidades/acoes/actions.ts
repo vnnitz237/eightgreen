@@ -2,64 +2,294 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { exigirPermissao } from "@/lib/autorizacao";
-import { acaoMutacaoSchema } from "./schemas";
 
-async function validarReferenciasElegiveis(tx: Prisma.TransactionClient, dados: { distribuidoraId?: string | null; estabelecimentoId?: string | null }) {
-  if (dados.distribuidoraId) {
-    const distribuidora = await tx.distribuidora.findFirst({ where: { id: dados.distribuidoraId, ativo: true }, select: { id: true } });
-    if (!distribuidora) throw new Error("A distribuidora selecionada não está disponível.");
-  }
-  if (dados.estabelecimentoId) {
-    const estabelecimento = await tx.estabelecimento.findFirst({ where: { id: dados.estabelecimentoId, ativo: true }, select: { id: true } });
-    if (!estabelecimento) throw new Error("O estabelecimento selecionado não está disponível.");
+// ─── Schemas ─────────────────────────────────────────────────────────────────
+
+const produtoItemSchema = z.object({
+  produtoId: z.string().min(1),
+  quantidade: z.number().int().positive("Quantidade deve ser positiva"),
+  preco: z.number().nonnegative("Preço deve ser positivo"),
+});
+
+const degustadoraItemSchema = z.object({
+  degustadoraId: z.string().min(1),
+  dataTrabalho: z.string().date("Data inválida"),
+  horaInicio: z.string().regex(/^\d{2}:\d{2}$/, "Hora inválida"),
+  horaFim: z.string().regex(/^\d{2}:\d{2}$/, "Hora inválida"),
+  observacoes: z.string().optional(),
+});
+
+const acaoBaseSchema = z.object({
+  titulo: z.string().min(1, "Título obrigatório"),
+  data: z.string().date("Data início inválida"),
+  dataFim: z.string().date("Data fim inválida").optional().nullable(),
+  horario: z.string().regex(/^\d{2}:\d{2}$/, "Horário inválido"),
+  status: z.enum(["aberta", "encerrada", "cancelada"]),
+  distribuidoraId: z.string().nullable().optional(),
+  estabelecimentoId: z.string().nullable().optional(),
+  estabelecimentoAvulso: z.string().nullable().optional(),
+  observacoes: z.string().optional().nullable(),
+});
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function gerarNumero(): Promise<string> {
+  const now = new Date();
+  const ano = now.getFullYear();
+  const mes = String(now.getMonth() + 1).padStart(2, "0");
+  const prefixo = `ACO-${ano}${mes}`;
+  const count = await prisma.acao.count({ where: { numero: { startsWith: prefixo } } });
+  return `${prefixo}-${String(count + 1).padStart(3, "0")}`;
+}
+
+function parseProdutos(formData: FormData) {
+  const raw = formData.get("produtos_json");
+  if (!raw) return [];
+  const items = JSON.parse(raw as string) as unknown[];
+  return z.array(produtoItemSchema).parse(items);
+}
+
+function parseDegustadoras(formData: FormData) {
+  const raw = formData.get("degustadoras_json");
+  if (!raw || raw === "[]") return [];
+  const items = JSON.parse(raw as string) as unknown[];
+  return z.array(degustadoraItemSchema).parse(items);
+}
+
+// ─── Ações CRUD ──────────────────────────────────────────────────────────────
+
+export async function criarAcao(
+  formData: FormData
+): Promise<{ ok: true; id: string } | { ok: false; erro: string }> {
+  try {
+    const dados = acaoBaseSchema.parse({
+      titulo: formData.get("titulo"),
+      data: formData.get("data"),
+      dataFim: formData.get("dataFim") || null,
+      horario: formData.get("horario"),
+      status: formData.get("status") ?? "aberta",
+      distribuidoraId: formData.get("distribuidoraId") || null,
+      estabelecimentoId: formData.get("estabelecimentoId") || null,
+      estabelecimentoAvulso: formData.get("estabelecimentoAvulso") || null,
+      observacoes: formData.get("observacoes") || null,
+    });
+
+    const produtos = parseProdutos(formData);
+    const degustadoras = parseDegustadoras(formData);
+
+    if (produtos.length === 0) return { ok: false, erro: "Informe ao menos 1 produto." };
+
+    const numero = await gerarNumero();
+
+    const acao = await prisma.$transaction(async (tx) => {
+      const nova = await tx.acao.create({
+        data: {
+          numero,
+          titulo: dados.titulo,
+          data: new Date(dados.data),
+          dataFim: dados.dataFim ? new Date(dados.dataFim) : null,
+          horario: dados.horario,
+          status: dados.status,
+          distribuidoraId: dados.distribuidoraId ?? null,
+          estabelecimentoId: dados.estabelecimentoId ?? null,
+          estabelecimentoAvulso: dados.estabelecimentoAvulso ?? null,
+          observacoes: dados.observacoes ?? null,
+        },
+      });
+
+      await tx.acaoProduto.createMany({
+        data: produtos.map((p) => ({
+          acaoId: nova.id,
+          produtoId: p.produtoId,
+          quantidadePlanejada: p.quantidade,
+          preco: p.preco,
+        })),
+      });
+
+      if (degustadoras.length > 0) {
+        await tx.acaoDegustadora.createMany({
+          data: degustadoras.map((d) => ({
+            acaoId: nova.id,
+            degustadoraId: d.degustadoraId,
+            dataTrabalho: new Date(d.dataTrabalho),
+            horaInicio: d.horaInicio,
+            horaFim: d.horaFim,
+            observacoes: d.observacoes ?? null,
+          })),
+        });
+      }
+
+      return nova;
+    });
+
+    revalidatePath("/acoes");
+    revalidatePath("/");
+    return { ok: true, id: acao.id };
+  } catch (err) {
+    if (err instanceof z.ZodError) return { ok: false, erro: err.issues[0]?.message ?? "Dados inválidos." };
+    return { ok: false, erro: err instanceof Error ? err.message : "Erro ao criar ação." };
   }
 }
 
-export async function criarAcao(formData: FormData) {
-  const usuario = await exigirPermissao("MUTAR_ACOES");
-  const dados = acaoMutacaoSchema.parse({
-    titulo: formData.get("titulo"),
-    data: formData.get("data"),
-    horario: formData.get("horario"),
-    distribuidoraId: formData.get("distribuidoraId") || null,
-    estabelecimentoId: formData.get("estabelecimentoId") || null,
-    estabelecimentoAvulso: formData.get("estabelecimentoAvulso") || null,
-  });
+export async function editarAcao(
+  id: string,
+  formData: FormData
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    const existente = await prisma.acao.findUnique({ where: { id } });
+    if (!existente) return { ok: false, erro: "Ação não encontrada." };
+    if (existente.status !== "aberta") return { ok: false, erro: "Só é possível editar ações abertas." };
 
-  await prisma.$transaction(async (tx) => {
-    await validarReferenciasElegiveis(tx, dados);
-    const acao = await tx.acao.create({ data: { ...dados, data: new Date(dados.data), status: "aberta" } });
-    await tx.auditoria.create({ data: { autorId: usuario.id, operacao: "CRIAR", entidade: "Acao", registroId: acao.id, estadoPosterior: { titulo: acao.titulo, data: acao.data.toISOString(), horario: acao.horario, status: acao.status, distribuidoraId: acao.distribuidoraId, estabelecimentoId: acao.estabelecimentoId, estabelecimentoAvulso: acao.estabelecimentoAvulso } } });
+    const dados = acaoBaseSchema.parse({
+      titulo: formData.get("titulo"),
+      data: formData.get("data"),
+      dataFim: formData.get("dataFim") || null,
+      horario: formData.get("horario"),
+      status: "aberta",
+      distribuidoraId: formData.get("distribuidoraId") || null,
+      estabelecimentoId: formData.get("estabelecimentoId") || null,
+      estabelecimentoAvulso: formData.get("estabelecimentoAvulso") || null,
+      observacoes: formData.get("observacoes") || null,
+    });
+
+    const produtos = parseProdutos(formData);
+    const degustadoras = parseDegustadoras(formData);
+
+    if (produtos.length === 0) return { ok: false, erro: "Informe ao menos 1 produto." };
+
+    await prisma.$transaction(async (tx) => {
+      await tx.acao.update({
+        where: { id },
+        data: {
+          titulo: dados.titulo,
+          data: new Date(dados.data),
+          dataFim: dados.dataFim ? new Date(dados.dataFim) : null,
+          horario: dados.horario,
+          distribuidoraId: dados.distribuidoraId ?? null,
+          estabelecimentoId: dados.estabelecimentoId ?? null,
+          estabelecimentoAvulso: dados.estabelecimentoAvulso ?? null,
+          observacoes: dados.observacoes ?? null,
+        },
+      });
+
+      await tx.acaoProduto.deleteMany({ where: { acaoId: id } });
+      await tx.acaoProduto.createMany({
+        data: produtos.map((p) => ({
+          acaoId: id,
+          produtoId: p.produtoId,
+          quantidadePlanejada: p.quantidade,
+          preco: p.preco,
+        })),
+      });
+
+      await tx.acaoDegustadora.deleteMany({ where: { acaoId: id } });
+      if (degustadoras.length > 0) {
+        await tx.acaoDegustadora.createMany({
+          data: degustadoras.map((d) => ({
+            acaoId: id,
+            degustadoraId: d.degustadoraId,
+            dataTrabalho: new Date(d.dataTrabalho),
+            horaInicio: d.horaInicio,
+            horaFim: d.horaFim,
+            observacoes: d.observacoes ?? null,
+          })),
+        });
+      }
+    });
+
+    revalidatePath("/acoes");
+    revalidatePath(`/acoes/${id}`);
+    revalidatePath("/");
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof z.ZodError) return { ok: false, erro: err.issues[0]?.message ?? "Dados inválidos." };
+    return { ok: false, erro: err instanceof Error ? err.message : "Erro ao editar ação." };
+  }
+}
+
+export async function clonarAcao(id: string) {
+  const original = await prisma.acao.findUnique({
+    where: { id },
+    include: {
+      produtos: true,
+      acaoDegustadoras: true,
+    },
+  });
+  if (!original) throw new Error("Ação não encontrada.");
+
+  const numero = await gerarNumero();
+
+  const nova = await prisma.$transaction(async (tx) => {
+    const criada = await tx.acao.create({
+      data: {
+        numero,
+        titulo: `${original.titulo} (cópia)`,
+        data: original.data,
+        dataFim: original.dataFim,
+        horario: original.horario,
+        status: "aberta",
+        distribuidoraId: original.distribuidoraId,
+        estabelecimentoId: original.estabelecimentoId,
+        estabelecimentoAvulso: original.estabelecimentoAvulso,
+        observacoes: original.observacoes,
+      },
+    });
+
+    if (original.produtos.length > 0) {
+      await tx.acaoProduto.createMany({
+        data: original.produtos.map((p) => ({
+          acaoId: criada.id,
+          produtoId: p.produtoId,
+          quantidadePlanejada: p.quantidadePlanejada,
+          preco: p.preco,
+        })),
+      });
+    }
+
+    if (original.acaoDegustadoras.length > 0) {
+      await tx.acaoDegustadora.createMany({
+        data: original.acaoDegustadoras.map((d) => ({
+          acaoId: criada.id,
+          degustadoraId: d.degustadoraId,
+          dataTrabalho: d.dataTrabalho,
+          horaInicio: d.horaInicio,
+          horaFim: d.horaFim,
+          observacoes: d.observacoes,
+        })),
+      });
+    }
+
+    return criada;
   });
 
   revalidatePath("/acoes");
   revalidatePath("/");
-  redirect("/acoes");
+  redirect(`/acoes/${nova.id}`);
 }
 
-export async function atualizarAcao(id: string, formData: FormData) {
-  const usuario = await exigirPermissao("MUTAR_ACOES");
-  const dados = acaoMutacaoSchema.parse({
-    titulo: formData.get("titulo"),
-    data: formData.get("data"),
-    horario: formData.get("horario"),
-    distribuidoraId: formData.get("distribuidoraId") || null,
-    estabelecimentoId: formData.get("estabelecimentoId") || null,
-    estabelecimentoAvulso: formData.get("estabelecimentoAvulso") || null,
-  });
-  await prisma.$transaction(async (tx) => {
-    const existente = await tx.acao.findUnique({ where: { id } });
-    if (!existente) throw new Error("AÇÃO_NÃO_ENCONTRADA");
-    if (existente.status !== "aberta") throw new Error("Somente ações abertas podem ser editadas nesta etapa.");
-    await validarReferenciasElegiveis(tx, dados);
-    const posterior = await tx.acao.update({ where: { id }, data: { ...dados, data: new Date(dados.data) } });
-    await tx.auditoria.create({ data: { autorId: usuario.id, operacao: "ATUALIZAR", entidade: "Acao", registroId: id, estadoAnterior: { titulo: existente.titulo, data: existente.data.toISOString(), horario: existente.horario, status: existente.status, distribuidoraId: existente.distribuidoraId, estabelecimentoId: existente.estabelecimentoId, estabelecimentoAvulso: existente.estabelecimentoAvulso }, estadoPosterior: { titulo: posterior.titulo, data: posterior.data.toISOString(), horario: posterior.horario, status: posterior.status, distribuidoraId: posterior.distribuidoraId, estabelecimentoId: posterior.estabelecimentoId, estabelecimentoAvulso: posterior.estabelecimentoAvulso } } });
-  });
+export async function cancelarAcao(id: string) {
+  const acao = await prisma.acao.findUnique({ where: { id } });
+  if (!acao) throw new Error("Ação não encontrada.");
+  if (acao.status !== "aberta") throw new Error("Só é possível cancelar ações abertas.");
+
+  await prisma.acao.update({ where: { id }, data: { status: "cancelada" } });
   revalidatePath("/acoes");
   revalidatePath(`/acoes/${id}`);
   revalidatePath("/");
-  redirect(`/acoes/${id}`);
+}
+
+export async function atualizarStatusAcao(id: string, status: "aberta" | "encerrada" | "cancelada") {
+  await prisma.acao.update({ where: { id }, data: { status } });
+  revalidatePath("/acoes");
+  revalidatePath(`/acoes/${id}`);
+  revalidatePath("/");
+}
+
+export async function excluirAcao(id: string) {
+  await prisma.acao.delete({ where: { id } });
+  revalidatePath("/acoes");
+  revalidatePath("/");
+  redirect("/acoes");
 }
