@@ -8,7 +8,7 @@ export const gruposNavegacao = [
   ]},
   { titulo: "Gestão", itens: [
     { rotulo: "Cadastros", href: "/cadastros/clientes", icone: ContactRound },
-    { rotulo: "Estoque", href: "/estoque/saldo", icone: Boxes },
+    { rotulo: "Estoque", href: "/estoque", icone: Boxes },
     { rotulo: "Financeiro", href: "/financeiro/conta-corrente", icone: CircleDollarSign },
   ]},
   { titulo: "Equipe", itens: [

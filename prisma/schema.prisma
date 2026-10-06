@@ -179,14 +179,15 @@ model Usuario {
   criadoEm           DateTime      @default(now()) @map("criado_em")
   atualizadoEm       DateTime      @updatedAt @map("atualizado_em")
 
-  degustadora      Degustadora?         @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
-  degustadoraId    String?              @unique @map("degustadora_id")
-  sessoes          Sessao[]
-  auditorias       Auditoria[]
-  compromissosResponsavel Compromisso[] @relation("CompromissoResponsavel")
-  registrosMerchan RegistroMerchan[]
-  rotas            Rota[]
-  despesas         DespesaEmpresarial[]
+  degustadora             Degustadora?         @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
+  degustadoraId           String?              @unique @map("degustadora_id")
+  sessoes                 Sessao[]
+  auditorias              Auditoria[]
+  compromissosResponsavel Compromisso[]        @relation("CompromissoResponsavel")
+  documentosEstoque       DocumentoEstoque[]   @relation("DocEstoqueResponsavel")
+  registrosMerchan        RegistroMerchan[]
+  rotas                   Rota[]
+  despesas                DespesaEmpresarial[]
 
   @@map("usuarios")
 }
@@ -301,6 +302,7 @@ model Produto {
   movimentacoes    MovimentacaoEstoque[]
   documentosItem   DocumentoEstoqueItem[]
   registrosMerchan RegistroMerchanProduto[]
+  saldoEstoque     SaldoEstoque?
 
   @@map("produtos")
 }
@@ -312,7 +314,7 @@ model Acao {
   numero      String     @unique @default(cuid()) @map("numero")
   titulo      String
   data        DateTime   @db.Date
-  dataFim     DateTime?  @db.Date  @map("data_fim")
+  dataFim     DateTime?  @db.Date @map("data_fim")
   horario     String
   status      StatusAcao @default(aberta)
   observacoes String?
@@ -324,10 +326,10 @@ model Acao {
   estabelecimentoId     String?          @map("estabelecimento_id")
   estabelecimentoAvulso String?          @map("estabelecimento_avulso")
 
-  profissionais     AcaoProfissional[]
-  produtos          AcaoProduto[]
-  acaoDegustadoras  AcaoDegustadora[]
-  compromissos      Compromisso[]
+  profissionais    AcaoProfissional[]
+  produtos         AcaoProduto[]
+  acaoDegustadoras AcaoDegustadora[]
+  compromissos     Compromisso[]
 
   criadoEm          DateTime           @default(now()) @map("criado_em")
   atualizadoEm      DateTime           @updatedAt @map("atualizado_em")
@@ -406,6 +408,7 @@ model MovimentacaoEstoque {
 
 model DocumentoEstoque {
   id           String                 @id @default(cuid())
+  numero       String?                @unique
   tipo         TipoDocumentoEstoque
   status       StatusDocumentoEstoque @default(ABERTO)
   data         DateTime               @db.Date
@@ -415,11 +418,13 @@ model DocumentoEstoque {
   criadoEm     DateTime               @default(now()) @map("criado_em")
   atualizadoEm DateTime               @updatedAt @map("atualizado_em")
 
-  fornecedor   Fornecedor?            @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  fornecedorId String?                @map("fornecedor_id")
-  acao         Acao?                  @relation(fields: [acaoId], references: [id], onDelete: SetNull)
-  acaoId       String?                @map("acao_id")
-  itens        DocumentoEstoqueItem[]
+  fornecedor    Fornecedor?            @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  fornecedorId  String?                @map("fornecedor_id")
+  acao          Acao?                  @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId        String?                @map("acao_id")
+  responsavel   Usuario?               @relation("DocEstoqueResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId String?                @map("responsavel_id")
+  itens         DocumentoEstoqueItem[]
 
   @@map("documentos_estoque")
 }
@@ -439,6 +444,16 @@ model DocumentoEstoqueItem {
 
   @@unique([documentoId, produtoId])
   @@map("documentos_estoque_itens")
+}
+
+model SaldoEstoque {
+  id           String   @id @default(cuid())
+  produtoId    String   @unique @map("produto_id")
+  produto      Produto  @relation(fields: [produtoId], references: [id])
+  quantidade   Int      @default(0)
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("saldos_estoque")
 }
 
 // ─── Financeiro ──────────────────────────────────────────────────────────────
@@ -612,15 +627,15 @@ model RegistroMerchanProduto {
 // ─── Pessoal ─────────────────────────────────────────────────────────────────
 
 model Compromisso {
-  id          String          @id @default(cuid())
-  titulo      String
-  tipo        TipoCompromisso @default(OUTRO)
-  inicio      DateTime
-  fim         DateTime
-  diaInteiro  Boolean         @default(false) @map("dia_inteiro")
-  observacoes String?
-  criadoEm    DateTime        @default(now()) @map("criado_em")
-  atualizadoEm DateTime       @updatedAt @map("atualizado_em")
+  id           String          @id @default(cuid())
+  titulo       String
+  tipo         TipoCompromisso @default(OUTRO)
+  inicio       DateTime
+  fim          DateTime
+  diaInteiro   Boolean         @default(false) @map("dia_inteiro")
+  observacoes  String?
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @updatedAt @map("atualizado_em")
 
   responsavel       Usuario?         @relation("CompromissoResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
   responsavelId     String?          @map("responsavel_id")
