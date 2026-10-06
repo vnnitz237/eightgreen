@@ -24,7 +24,7 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
   if (!acao) notFound();
 
   const nomeEstab = acao.estabelecimentoId && acao.estabelecimento
-    ? acao.estabelecimento.nome
+    ? acao.estabelecimento.nomeFantasia ?? acao.estabelecimento.razaoSocial
     : acao.estabelecimentoAvulso ?? "Não informado";
 
   return (
@@ -92,7 +92,7 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
                 {acao.produtos.map((p) => (
                   <tr key={p.id}>
                     <td>{p.produto.nome}</td>
-                    <td>{p.quantidadePlanejada} {p.produto.unidade}</td>
+                    <td>{p.quantidadePlanejada.toString()} {p.produto.unidade}</td>
                   </tr>
                 ))}
               </tbody>

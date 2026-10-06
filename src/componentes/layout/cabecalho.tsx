@@ -24,6 +24,7 @@ export function Cabecalho({ abrirMenu, usuario }: { abrirMenu: () => void; usuar
       <details className="menu-modulos">
         <summary>Mais <ChevronDown size={14}/></summary>
         <div className="menu-modulos-painel">
+          <section><strong>Cadastros</strong><Link href="/cadastros/canais">Canais</Link><Link href="/cadastros/bancos">Bancos</Link><Link href="/cadastros/estabelecimentos">Estabelecimentos</Link><Link href="/cadastros/degustadoras">Degustadoras</Link><Link href="/cadastros/fornecedores">Fornecedores</Link><Link href="/cadastros/grupos-produto">Grupos de produtos</Link><Link href="/cadastros/produtos">Produtos</Link></section>
           {gruposNavegacao.map((grupo) => <section key={grupo.titulo}><strong>{grupo.titulo}</strong>{grupo.itens.map((item) => <Link href={item.href} key={item.href}>{item.rotulo}</Link>)}</section>)}
           {usuario.papel === "ADMINISTRADOR" && <section><strong>Administração</strong><Link href="/configuracoes/usuarios">Usuários e acessos</Link></section>}
         </div>

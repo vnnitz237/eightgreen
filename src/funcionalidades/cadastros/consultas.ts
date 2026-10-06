@@ -1,36 +1,42 @@
 import { prisma } from "@/lib/prisma";
+import type { CampoCadastro, DadosPaginaCadastro, RegistroCadastro, TipoCadastro } from "./tipos";
 
-export async function listarDistribuidoras() {
-  return prisma.distribuidora.findMany({ orderBy: { nome: "asc" } });
-}
+const POR_PAGINA = 20;
+const texto = (valor: unknown) => valor == null ? "" : String(valor);
+export async function listarDistribuidoras() { return prisma.distribuidora.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }); }
+export async function listarEstabelecimentos() { return prisma.estabelecimento.findMany({ where: { ativo: true }, orderBy: { razaoSocial: "asc" } }); }
+export async function listarDegustadoras() { return prisma.degustadora.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }); }
+export async function listarFornecedores() { return prisma.fornecedor.findMany({ where: { ativo: true }, orderBy: { razaoSocial: "asc" } }); }
+export async function listarProdutos() { return prisma.produto.findMany({ where: { ativo: true }, include: { grupo: true }, orderBy: { nome: "asc" } }); }
+export async function listarGruposProduto() { return prisma.grupoProduto.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }); }
+export async function listarCanais() { return prisma.canal.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }); }
+export async function listarBancos() { return prisma.banco.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }); }
 
-export async function listarEstabelecimentos() {
-  return prisma.estabelecimento.findMany({ orderBy: { nome: "asc" } });
-}
-
-export async function listarDegustadoras() {
-  return prisma.degustadora.findMany({ orderBy: { nome: "asc" } });
-}
-
-export async function listarFornecedores() {
-  return prisma.fornecedor.findMany({ orderBy: { nome: "asc" } });
-}
-
-export async function listarProdutos() {
-  return prisma.produto.findMany({
-    include: { grupo: true },
-    orderBy: { nome: "asc" },
-  });
-}
-
-export async function listarGruposProduto() {
-  return prisma.grupoProduto.findMany({ orderBy: { nome: "asc" } });
-}
-
-export async function listarCanais() {
-  return prisma.canal.findMany({ orderBy: { nome: "asc" } });
-}
-
-export async function listarBancos() {
-  return prisma.banco.findMany({ orderBy: { nome: "asc" } });
+const camposBase: Record<TipoCadastro, CampoCadastro[]> = {
+ canal:[{nome:"nome",rotulo:"Nome",obrigatorio:true}],
+ banco:[{nome:"nome",rotulo:"Nome",obrigatorio:true},{nome:"codigo",rotulo:"Código"}],
+ estabelecimento:[{nome:"razaoSocial",rotulo:"Razão social",obrigatorio:true},{nome:"nomeFantasia",rotulo:"Nome fantasia"},{nome:"cnpjCpf",rotulo:"CPF/CNPJ"},{nome:"ieRg",rotulo:"IE/RG"},{nome:"canalId",rotulo:"Canal",tipo:"select"},{nome:"distribuidoraId",rotulo:"Distribuidora",tipo:"select"},{nome:"endereco",rotulo:"Endereço",largura:"dupla"},{nome:"numero",rotulo:"Número"},{nome:"complemento",rotulo:"Complemento"},{nome:"bairro",rotulo:"Bairro"},{nome:"cidade",rotulo:"Cidade"},{nome:"uf",rotulo:"UF"},{nome:"cep",rotulo:"CEP"},{nome:"telefone",rotulo:"Telefone"},{nome:"email",rotulo:"E-mail",tipo:"email"},{nome:"contato",rotulo:"Responsável"}],
+ degustadora:[{nome:"nome",rotulo:"Nome",obrigatorio:true},{nome:"cpf",rotulo:"CPF"},{nome:"rg",rotulo:"RG"},{nome:"telefone",rotulo:"Telefone"},{nome:"email",rotulo:"E-mail",tipo:"email"},{nome:"cidade",rotulo:"Cidade"},{nome:"uf",rotulo:"UF"},{nome:"bancoDadosId",rotulo:"Banco",tipo:"select"},{nome:"agencia",rotulo:"Agência"},{nome:"conta",rotulo:"Conta"},{nome:"usuarioId",rotulo:"Usuário do sistema",tipo:"select"}],
+ fornecedor:[{nome:"razaoSocial",rotulo:"Razão social",obrigatorio:true},{nome:"nomeFantasia",rotulo:"Nome fantasia"},{nome:"cnpj",rotulo:"CNPJ"},{nome:"ie",rotulo:"IE"},{nome:"endereco",rotulo:"Endereço",largura:"dupla"},{nome:"numero",rotulo:"Número"},{nome:"complemento",rotulo:"Complemento"},{nome:"bairro",rotulo:"Bairro"},{nome:"cidade",rotulo:"Cidade"},{nome:"uf",rotulo:"UF"},{nome:"cep",rotulo:"CEP"},{nome:"telefone",rotulo:"Telefone"},{nome:"email",rotulo:"E-mail",tipo:"email"},{nome:"contato",rotulo:"Responsável"}],
+ grupoProduto:[{nome:"nome",rotulo:"Nome",obrigatorio:true}],
+ produto:[{nome:"codigo",rotulo:"Código"},{nome:"nome",rotulo:"Nome",obrigatorio:true},{nome:"grupoProdutoId",rotulo:"Grupo",tipo:"select",obrigatorio:true},{nome:"unidade",rotulo:"Unidade",tipo:"select",obrigatorio:true,opcoes:["UN","CX","KG","LT","FD","PCT"].map(v=>({valor:v,rotulo:v}))},{nome:"estoqueMinimo",rotulo:"Estoque mínimo",tipo:"number",passo:"0.001",obrigatorio:true},{nome:"custo",rotulo:"Custo",tipo:"number",passo:"0.01"},{nome:"valorVenda",rotulo:"Valor de venda",tipo:"number",passo:"0.01"}],
+};
+const meta: Record<TipoCadastro,{titulo:string;descricao:string;colunas:Array<{chave:string;rotulo:string}>}>={
+ canal:{titulo:"Canais",descricao:"Canais comerciais dos estabelecimentos",colunas:[{chave:"nome",rotulo:"Nome"}]}, banco:{titulo:"Bancos",descricao:"Bancos disponíveis para dados de pagamento",colunas:[{chave:"nome",rotulo:"Nome"},{chave:"codigo",rotulo:"Código"}]},
+ estabelecimento:{titulo:"Estabelecimentos",descricao:"Locais atendidos pelas ações promocionais",colunas:[{chave:"nome",rotulo:"Estabelecimento"},{chave:"canal",rotulo:"Canal"},{chave:"cidade",rotulo:"Cidade"}]}, degustadora:{titulo:"Degustadoras",descricao:"Profissionais vinculáveis às ações",colunas:[{chave:"nome",rotulo:"Nome"},{chave:"telefone",rotulo:"Telefone"},{chave:"banco",rotulo:"Banco"}]},
+ fornecedor:{titulo:"Fornecedores",descricao:"Empresas fornecedoras da operação",colunas:[{chave:"nome",rotulo:"Fornecedor"},{chave:"cidade",rotulo:"Cidade"},{chave:"contato",rotulo:"Contato"}]}, grupoProduto:{titulo:"Grupos de produtos",descricao:"Classificação do catálogo de produtos",colunas:[{chave:"nome",rotulo:"Nome"}]},
+ produto:{titulo:"Produtos",descricao:"Produtos planejados nas ações",colunas:[{chave:"codigo",rotulo:"Código"},{chave:"nome",rotulo:"Nome"},{chave:"grupo",rotulo:"Grupo"},{chave:"unidade",rotulo:"Unidade"},{chave:"estoqueMinimo",rotulo:"Estoque mínimo"}]},
+};
+export async function buscarPaginaCadastro(tipo:TipoCadastro, entrada:{busca?:string;pagina?:string}):Promise<DadosPaginaCadastro>{
+ const busca=(entrada.busca??"").trim(), pagina=Math.max(1,parseInt(entrada.pagina??"1")||1), skip=(pagina-1)*POR_PAGINA; let registros:RegistroCadastro[]=[]; let total=0;
+ if(tipo==="canal"){const where=busca?{nome:{contains:busca,mode:"insensitive" as const}}:{};const [i,n]=await prisma.$transaction([prisma.canal.findMany({where,orderBy:{nome:"asc"},skip,take:POR_PAGINA}),prisma.canal.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{nome:x.nome},colunas:{nome:x.nome}}));}
+ else if(tipo==="banco"){const where=busca?{nome:{contains:busca,mode:"insensitive" as const}}:{};const [i,n]=await prisma.$transaction([prisma.banco.findMany({where,orderBy:{nome:"asc"},skip,take:POR_PAGINA}),prisma.banco.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{nome:x.nome,codigo:texto(x.codigo)},colunas:{nome:x.nome,codigo:x.codigo||"—"}}));}
+ else if(tipo==="estabelecimento"){const where=busca?{OR:[{razaoSocial:{contains:busca,mode:"insensitive" as const}},{nomeFantasia:{contains:busca,mode:"insensitive" as const}}]}:{};const [i,n]=await prisma.$transaction([prisma.estabelecimento.findMany({where,include:{canal:true},orderBy:{razaoSocial:"asc"},skip,take:POR_PAGINA}),prisma.estabelecimento.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{razaoSocial:x.razaoSocial,nomeFantasia:texto(x.nomeFantasia),cnpjCpf:texto(x.cnpjCpf),ieRg:texto(x.ieRg),canalId:texto(x.canalId),distribuidoraId:texto(x.distribuidoraId),endereco:texto(x.endereco),numero:texto(x.numero),complemento:texto(x.complemento),bairro:texto(x.bairro),cidade:texto(x.cidade),uf:texto(x.uf),cep:texto(x.cep),telefone:texto(x.telefone),email:texto(x.email),contato:texto(x.contato)},colunas:{nome:x.nomeFantasia||x.razaoSocial,canal:x.canal?.nome||"—",cidade:x.cidade||"—"}}));}
+ else if(tipo==="degustadora"){const where=busca?{nome:{contains:busca,mode:"insensitive" as const}}:{};const [i,n]=await prisma.$transaction([prisma.degustadora.findMany({where,include:{bancoDados:true,usuario:{select:{id:true}}},orderBy:{nome:"asc"},skip,take:POR_PAGINA}),prisma.degustadora.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{nome:x.nome,cpf:texto(x.cpf),rg:texto(x.rg),telefone:texto(x.telefone),email:texto(x.email),cidade:texto(x.cidade),uf:texto(x.uf),bancoDadosId:texto(x.bancoDadosId),agencia:texto(x.agencia),conta:texto(x.conta),usuarioId:texto(x.usuario?.id)},colunas:{nome:x.nome,telefone:x.telefone||"—",banco:x.bancoDados?.nome||"—"}}));}
+ else if(tipo==="fornecedor"){const where=busca?{OR:[{razaoSocial:{contains:busca,mode:"insensitive" as const}},{nomeFantasia:{contains:busca,mode:"insensitive" as const}}]}:{};const [i,n]=await prisma.$transaction([prisma.fornecedor.findMany({where,orderBy:{razaoSocial:"asc"},skip,take:POR_PAGINA}),prisma.fornecedor.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{razaoSocial:x.razaoSocial,nomeFantasia:texto(x.nomeFantasia),cnpj:texto(x.cnpj),ie:texto(x.ie),endereco:texto(x.endereco),numero:texto(x.numero),complemento:texto(x.complemento),bairro:texto(x.bairro),cidade:texto(x.cidade),uf:texto(x.uf),cep:texto(x.cep),telefone:texto(x.telefone),email:texto(x.email),contato:texto(x.contato)},colunas:{nome:x.nomeFantasia||x.razaoSocial,cidade:x.cidade||"—",contato:x.contato||"—"}}));}
+ else if(tipo==="grupoProduto"){const where=busca?{nome:{contains:busca,mode:"insensitive" as const}}:{};const [i,n]=await prisma.$transaction([prisma.grupoProduto.findMany({where,orderBy:{nome:"asc"},skip,take:POR_PAGINA}),prisma.grupoProduto.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{nome:x.nome},colunas:{nome:x.nome}}));}
+ else{const where=busca?{OR:[{nome:{contains:busca,mode:"insensitive" as const}},{codigo:{contains:busca,mode:"insensitive" as const}}]}:{};const [i,n]=await prisma.$transaction([prisma.produto.findMany({where,include:{grupo:true},orderBy:{nome:"asc"},skip,take:POR_PAGINA}),prisma.produto.count({where})]);total=n;registros=i.map(x=>({id:x.id,ativo:x.ativo,valores:{codigo:texto(x.codigo),nome:x.nome,grupoProdutoId:texto(x.grupoId),unidade:x.unidade,estoqueMinimo:x.estoqueMinimo.toString(),custo:texto(x.custo),valorVenda:texto(x.valorVenda)},colunas:{codigo:x.codigo||"—",nome:x.nome,grupo:x.grupo?.nome||"—",unidade:x.unidade,estoqueMinimo:x.estoqueMinimo.toString()}}));}
+ const campos=camposBase[tipo].map(c=>({...c})); const [canais,distribuidoras,bancos,grupos,usuarios]=await Promise.all([tipo==="estabelecimento"?listarCanais():[],tipo==="estabelecimento"?listarDistribuidoras():[],tipo==="degustadora"?listarBancos():[],tipo==="produto"?listarGruposProduto():[],tipo==="degustadora"?prisma.usuario.findMany({where:{ativo:true},orderBy:{name:"asc"},select:{id:true,name:true,email:true}}):[]]);
+ for(const c of campos){if(c.nome==="canalId")c.opcoes=canais.map(x=>({valor:x.id,rotulo:x.nome}));if(c.nome==="distribuidoraId")c.opcoes=distribuidoras.map(x=>({valor:x.id,rotulo:x.nome}));if(c.nome==="bancoDadosId")c.opcoes=bancos.map(x=>({valor:x.id,rotulo:x.nome}));if(c.nome==="grupoProdutoId")c.opcoes=grupos.map(x=>({valor:x.id,rotulo:x.nome}));if(c.nome==="usuarioId")c.opcoes=usuarios.map(x=>({valor:x.id,rotulo:x.name||x.email}));}
+ return{tipo,...meta[tipo],campos,registros,total,pagina,totalPaginas:Math.max(1,Math.ceil(total/POR_PAGINA)),busca};
 }

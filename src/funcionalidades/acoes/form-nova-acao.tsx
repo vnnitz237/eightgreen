@@ -94,7 +94,7 @@ export function FormNovaAcao({ distribuidoras, estabelecimentos }: Props) {
                 <select name="estabelecimentoId" required style={{ height: 36, border: "1px solid var(--linha)", borderRadius: 7, padding: "0 11px", fontSize: 12 }}>
                   <option value="">Selecione...</option>
                   {estabelecimentos.map((e) => (
-                    <option key={e.id} value={e.id}>{e.nome}</option>
+                <option key={e.id} value={e.id}>{e.nomeFantasia ?? e.razaoSocial}</option>
                   ))}
                 </select>
                 <input type="hidden" name="estabelecimentoAvulso" value="" />

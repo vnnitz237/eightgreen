@@ -8,23 +8,24 @@ export async function calcularSaldoEstoque() {
 
   return produtos.map((produto) => {
     const quantidade = produto.movimentacoes.reduce((total, m) => {
-      if (m.tipo === "entrada") return total + m.quantidade;
-      if (m.tipo === "saida") return total - m.quantidade;
-      return total + m.quantidade; // ajuste pode ser positivo ou negativo
+      if (m.tipo === "entrada") return total + Number(m.quantidade);
+      if (m.tipo === "saida") return total - Number(m.quantidade);
+      return total + Number(m.quantidade); // ajuste pode ser positivo ou negativo
     }, 0);
 
     return {
       id: produto.id,
       produto: produto.nome,
       quantidade,
-      minimo: produto.estoqueMinimo,
+      minimo: Number(produto.estoqueMinimo),
     };
   });
 }
 
 export async function listarMovimentacoes() {
-  return prisma.movimentacaoEstoque.findMany({
+  const itens = await prisma.movimentacaoEstoque.findMany({
     include: { produto: true },
     orderBy: { criadoEm: "desc" },
   });
+  return itens.map((item) => ({ ...item, quantidade: Number(item.quantidade) }));
 }

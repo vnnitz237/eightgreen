@@ -24,7 +24,7 @@ export const gruposNavegacao = [
 
 export const rotasDocumentadas = [
   "/acoes", "/acoes/nova", "/acoes/[id]", "/acoes/[id]/editar", "/acoes/[id]/checkout",
-  "/cadastros/clientes", "/cadastros/degustadoras", "/cadastros/fornecedores", "/cadastros/produtos", "/cadastros/grupos", "/cadastros/canais", "/cadastros/bancos",
+  "/cadastros/clientes", "/cadastros/estabelecimentos", "/cadastros/degustadoras", "/cadastros/fornecedores", "/cadastros/produtos", "/cadastros/grupos-produto", "/cadastros/canais", "/cadastros/bancos",
   "/estoque/entradas", "/estoque/saidas", "/estoque/inventario", "/estoque/saldo",
   "/financeiro/conta-corrente", "/financeiro/a-pagar", "/financeiro/a-receber", "/financeiro/despesas", "/financeiro/titulos",
   "/merchan", "/pessoal/agenda", "/pessoal/rotas", "/relatorios/acoes", "/relatorios/conta-corrente", "/relatorios/contas-a-pagar", "/relatorios/estoque-minimo", "/configuracoes/usuarios", "/configuracoes/perfil",

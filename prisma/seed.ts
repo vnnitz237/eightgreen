@@ -12,7 +12,7 @@ function variavel(nome: string, alternativa?: string) {
 async function main() {
   const canal = await prisma.canal.upsert({ where: { id: "CAN-01" }, update: { ativo: true }, create: { id: "CAN-01", nome: "Varejo", ativo: true } });
   const banco = await prisma.banco.upsert({ where: { id: "BAN-01" }, update: { ativo: true }, create: { id: "BAN-01", nome: "Banco de desenvolvimento", codigo: "000", ativo: true } });
-  const fornecedor = await prisma.fornecedor.upsert({ where: { id: "FOR-01" }, update: { ativo: true }, create: { id: "FOR-01", nome: "Fornecedor Laboratório", ativo: true } });
+  const fornecedor = await prisma.fornecedor.upsert({ where: { id: "FOR-01" }, update: { ativo: true }, create: { id: "FOR-01", razaoSocial: "Fornecedor Laboratório", ativo: true } });
   const grupo = await prisma.grupoProduto.upsert({ where: { id: "GRP-01" }, update: { ativo: true }, create: { id: "GRP-01", nome: "Produtos demonstrativos", ativo: true } });
 
   // ─── Distribuidoras ───────────────────────────────────────────────────────
@@ -24,11 +24,11 @@ async function main() {
 
   // ─── Estabelecimentos ─────────────────────────────────────────────────────
   const estabelecimentos = await Promise.all([
-    prisma.estabelecimento.upsert({ where: { id: "E-01" }, update: { distribuidoraId: "D-01", canalId: canal.id }, create: { id: "E-01", nome: "Mercado Estação", endereco: "Endereço sintético", distribuidoraId: "D-01", canalId: canal.id } }),
-    prisma.estabelecimento.upsert({ where: { id: "E-02" }, update: {}, create: { id: "E-02", nome: "Empório do Parque" } }),
-    prisma.estabelecimento.upsert({ where: { id: "E-03" }, update: {}, create: { id: "E-03", nome: "Loja Movimento" } }),
-    prisma.estabelecimento.upsert({ where: { id: "E-04" }, update: {}, create: { id: "E-04", nome: "Supermercado Alameda" } }),
-    prisma.estabelecimento.upsert({ where: { id: "E-05" }, update: {}, create: { id: "E-05", nome: "Clube Bem Viver" } }),
+    prisma.estabelecimento.upsert({ where: { id: "E-01" }, update: { distribuidoraId: "D-01", canalId: canal.id }, create: { id: "E-01", razaoSocial: "Mercado Estação", endereco: "Endereço sintético", distribuidoraId: "D-01", canalId: canal.id } }),
+    prisma.estabelecimento.upsert({ where: { id: "E-02" }, update: {}, create: { id: "E-02", razaoSocial: "Empório do Parque" } }),
+    prisma.estabelecimento.upsert({ where: { id: "E-03" }, update: {}, create: { id: "E-03", razaoSocial: "Loja Movimento" } }),
+    prisma.estabelecimento.upsert({ where: { id: "E-04" }, update: {}, create: { id: "E-04", razaoSocial: "Supermercado Alameda" } }),
+    prisma.estabelecimento.upsert({ where: { id: "E-05" }, update: {}, create: { id: "E-05", razaoSocial: "Clube Bem Viver" } }),
   ]);
 
   // ─── Degustadoras ─────────────────────────────────────────────────────────

@@ -37,7 +37,7 @@ export async function buscarDadosDashboard(): Promise<{
     status: acao.status,
     distribuidora: acao.distribuidora ? { id: acao.distribuidora.id, nome: acao.distribuidora.nome } : null,
     estabelecimento: acao.estabelecimentoId && acao.estabelecimento
-      ? { modo: "cadastrado", id: acao.estabelecimento.id, nome: acao.estabelecimento.nome }
+      ? { modo: "cadastrado", id: acao.estabelecimento.id, nome: acao.estabelecimento.nomeFantasia ?? acao.estabelecimento.razaoSocial }
       : { modo: "avulso", nome: acao.estabelecimentoAvulso ?? "Não informado" },
     profissionais: acao.profissionais.map((p) =>
       p.degustadora
@@ -47,17 +47,17 @@ export async function buscarDadosDashboard(): Promise<{
     produtos: acao.produtos.map((p) => ({
       id: p.produto.id,
       nome: p.produto.nome,
-      quantidadePlanejada: p.quantidadePlanejada,
+      quantidadePlanejada: Number(p.quantidadePlanejada),
     })),
   }));
 
   const saldoEstoque: ItemSaldoEstoque[] = produtosDb.map((produto) => {
     const quantidade = produto.movimentacoes.reduce((total, m) => {
-      if (m.tipo === "entrada") return total + m.quantidade;
-      if (m.tipo === "saida") return total - m.quantidade;
-      return total + m.quantidade;
+      if (m.tipo === "entrada") return total + Number(m.quantidade);
+      if (m.tipo === "saida") return total - Number(m.quantidade);
+      return total + Number(m.quantidade);
     }, 0);
-    return { id: produto.id, produto: produto.nome, quantidade, minimo: produto.estoqueMinimo };
+    return { id: produto.id, produto: produto.nome, quantidade, minimo: Number(produto.estoqueMinimo) };
   });
 
   return { acoes, saldoEstoque };

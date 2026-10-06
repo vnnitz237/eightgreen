@@ -31,7 +31,7 @@ export default async function MerchanPage() {
                     <td>{formatarDataCurta(v.data.toISOString().slice(0, 10))}</td>
                     <td>{v.distribuidora?.nome ?? <span style={{ color: "var(--muted)" }}>—</span>}</td>
                     <td>
-                      {v.estabelecimento?.nome ?? v.estabelecimentoAvulso ?? <span style={{ color: "var(--muted)" }}>—</span>}
+                      {(v.estabelecimento ? v.estabelecimento.nomeFantasia ?? v.estabelecimento.razaoSocial : null) ?? v.estabelecimentoAvulso ?? <span style={{ color: "var(--muted)" }}>—</span>}
                     </td>
                     <td>{v.observacao ?? <span style={{ color: "var(--muted)" }}>—</span>}</td>
                   </tr>
@@ -56,7 +56,7 @@ export default async function MerchanPage() {
             Estabelecimento
             <select name="estabelecimentoId">
               <option value="">Avulso / sem vínculo</option>
-              {estabelecimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+              {estabelecimentos.map((e) => <option key={e.id} value={e.id}>{e.nomeFantasia ?? e.razaoSocial}</option>)}
             </select>
           </label>
           <label>Local avulso<input name="estabelecimentoAvulso" placeholder="Se não cadastrado" /></label>

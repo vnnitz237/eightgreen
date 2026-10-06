@@ -3,7 +3,7 @@ import type { AcaoPromocional, RepositorioAcoes } from "./tipos";
 
 function mapearAcao(acao: Awaited<ReturnType<typeof buscarAcoes>>[number]): AcaoPromocional {
   const estabelecimento = acao.estabelecimentoId && acao.estabelecimento
-    ? { modo: "cadastrado" as const, id: acao.estabelecimento.id, nome: acao.estabelecimento.nome }
+    ? { modo: "cadastrado" as const, id: acao.estabelecimento.id, nome: acao.estabelecimento.nomeFantasia ?? acao.estabelecimento.razaoSocial }
     : { modo: "avulso" as const, nome: acao.estabelecimentoAvulso ?? "Não informado" };
 
   return {
@@ -22,7 +22,7 @@ function mapearAcao(acao: Awaited<ReturnType<typeof buscarAcoes>>[number]): Acao
     produtos: acao.produtos.map((p) => ({
       id: p.produto.id,
       nome: p.produto.nome,
-      quantidadePlanejada: p.quantidadePlanejada,
+      quantidadePlanejada: Number(p.quantidadePlanejada),
     })),
   };
 }

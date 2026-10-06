@@ -93,12 +93,24 @@ model Distribuidora {
 }
 
 model Estabelecimento {
-  id       String   @id @default(cuid())
-  nome     String
-  ativo    Boolean  @default(true)
-  criadoEm DateTime @default(now()) @map("criado_em")
-
-  endereco String?
+  id           String   @id @default(cuid())
+  razaoSocial  String   @map("nome")
+  nomeFantasia String?  @map("nome_fantasia")
+  cnpjCpf      String?  @map("cnpj_cpf")
+  ieRg         String?  @map("ie_rg")
+  endereco     String?
+  numero       String?
+  complemento  String?
+  bairro       String?
+  cidade       String?
+  uf           String?
+  cep          String?
+  telefone     String?
+  email        String?
+  contato      String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
   distribuidora   Distribuidora? @relation(fields: [distribuidoraId], references: [id], onDelete: SetNull)
   distribuidoraId String?        @map("distribuidora_id")
@@ -122,9 +134,17 @@ model Degustadora {
 
   telefone String?
   email    String?
+  cpf      String?
+  rg       String?
+  cidade   String?
+  uf       String?
+  agencia  String?
+  conta    String?
 
   fornecedor    Fornecedor?       @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
   fornecedorId  String?           @map("fornecedor_id")
+  bancoDados    Banco?            @relation(fields: [bancoDadosId], references: [id], onDelete: SetNull)
+  bancoDadosId  String?           @map("banco_dados_id")
   participacoes AcaoDegustadora[]
   contasPagar   ContaPagar[]
   usuario       Usuario?
@@ -189,10 +209,24 @@ model Auditoria {
 }
 
 model Fornecedor {
-  id       String   @id @default(cuid())
-  nome     String
-  ativo    Boolean  @default(true)
-  criadoEm DateTime @default(now()) @map("criado_em")
+  id           String   @id @default(cuid())
+  razaoSocial  String   @map("nome")
+  nomeFantasia String?  @map("nome_fantasia")
+  cnpj         String?
+  ie           String?
+  endereco     String?
+  numero       String?
+  complemento  String?
+  bairro       String?
+  cidade       String?
+  uf           String?
+  cep          String?
+  telefone     String?
+  email        String?
+  contato      String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
   documentosEstoque DocumentoEstoque[]
   contasPagar       ContaPagar[]
@@ -203,7 +237,7 @@ model Fornecedor {
 
 model GrupoProduto {
   id       String   @id @default(cuid())
-  nome     String
+  nome     String   @unique
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
@@ -214,7 +248,7 @@ model GrupoProduto {
 
 model Canal {
   id       String   @id @default(cuid())
-  nome     String
+  nome     String   @unique
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
@@ -226,24 +260,29 @@ model Canal {
 
 model Banco {
   id       String   @id @default(cuid())
-  nome     String
+  nome     String   @unique
   codigo   String?
   ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
   contasPagar   ContaPagar[]
   contasReceber ContaReceber[]
+  degustadoras  Degustadora[]
 
   @@map("bancos")
 }
 
 model Produto {
   id            String   @id @default(cuid())
+  codigo        String?  @unique
   nome          String
-  unidade       String   @default("un")
-  estoqueMinimo Int      @default(0) @map("estoque_minimo")
+  unidade       String   @default("UN")
+  estoqueMinimo Decimal  @default(0) @map("estoque_minimo") @db.Decimal(14, 3)
+  custo         Decimal? @db.Decimal(12, 2)
+  valorVenda    Decimal? @map("valor_venda") @db.Decimal(12, 2)
   ativo         Boolean  @default(true)
   criadoEm      DateTime @default(now()) @map("criado_em")
+  atualizadoEm  DateTime @updatedAt @map("atualizado_em")
 
   grupo   GrupoProduto? @relation(fields: [grupoId], references: [id])
   grupoId String?       @map("grupo_id")
@@ -309,7 +348,7 @@ model AcaoProduto {
   produto   Produto @relation(fields: [produtoId], references: [id])
   produtoId String  @map("produto_id")
 
-  quantidadePlanejada Int @map("quantidade_planejada")
+  quantidadePlanejada Decimal @map("quantidade_planejada") @db.Decimal(14, 3)
 
   @@map("acao_produtos")
 }
@@ -319,7 +358,7 @@ model AcaoProduto {
 model MovimentacaoEstoque {
   id         String                  @id @default(cuid())
   tipo       TipoMovimentacaoEstoque
-  quantidade Int
+  quantidade Decimal                 @db.Decimal(14, 3)
   observacao String?
   criadoEm   DateTime                @default(now()) @map("criado_em")
 
