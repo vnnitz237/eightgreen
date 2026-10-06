@@ -6,7 +6,6 @@ import { ArrowLeft, Edit3 } from "lucide-react";
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { Status } from "@/componentes/ui/status";
 import { formatarDataCurta } from "@/lib/formatadores";
-import { atualizarStatusAcao, excluirAcao } from "@/funcionalidades/acoes/actions";
 import { prisma } from "@/lib/prisma";
 
 export default async function DetalheAcaoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,11 +27,6 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
     ? acao.estabelecimento.nome
     : acao.estabelecimentoAvulso ?? "Não informado";
 
-  const encerrar = atualizarStatusAcao.bind(null, acao.id, "encerrada");
-  const cancelar = atualizarStatusAcao.bind(null, acao.id, "cancelada");
-  const reabrir = atualizarStatusAcao.bind(null, acao.id, "aberta");
-  const excluir = excluirAcao.bind(null, acao.id);
-
   return (
     <div className="pagina-conteudo">
       <div style={{ marginBottom: 20 }}>
@@ -50,21 +44,6 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
             <Link href={`/acoes/${acao.id}/editar`} className="bt-secundario">
               <Edit3 size={14} /> Editar
             </Link>
-            {acao.status === "aberta" && (
-              <form action={encerrar} style={{ display: "contents" }}>
-                <button className="botao" type="submit">Encerrar</button>
-              </form>
-            )}
-            {acao.status === "aberta" && (
-              <form action={cancelar} style={{ display: "contents" }}>
-                <button className="bt-danger" type="submit">Cancelar ação</button>
-              </form>
-            )}
-            {acao.status !== "aberta" && (
-              <form action={reabrir} style={{ display: "contents" }}>
-                <button className="bt-secundario" type="submit">Reabrir</button>
-              </form>
-            )}
           </div>
         }
       />
@@ -124,15 +103,7 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
         )}
       </div>
 
-      <div className="painel" style={{ borderColor: "#f5d5d2" }}>
-        <div className="painel-cabecalho"><div><h2 style={{ color: "#9b3c34" }}>Zona de risco</h2><p>Esta operação não pode ser desfeita</p></div></div>
-        <div style={{ padding: "16px 19px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <p style={{ margin: 0, fontSize: 11, color: "var(--texto)" }}>Excluir esta ação remove permanentemente todos os dados associados.</p>
-          <form action={excluir}>
-            <button className="bt-danger" type="submit">Excluir ação</button>
-          </form>
-        </div>
-      </div>
+      <div className="limite-pendente" role="note">Encerramento, cancelamento, reabertura e exclusão estão indisponíveis até a validação do checkout e de seus efeitos em estoque e financeiro.</div>
     </div>
   );
 }

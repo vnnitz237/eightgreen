@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { exigirPermissao, exigirUsuario } from "@/lib/autorizacao";
 
 const merchanSchema = z.object({
   data: z.string().date("Data inválida"),
@@ -13,6 +14,7 @@ const merchanSchema = z.object({
 });
 
 export async function criarMerchan(formData: FormData) {
+  await exigirPermissao("MUTAR_MERCHAN");
   const dados = merchanSchema.parse({
     data: formData.get("data"),
     distribuidoraId: formData.get("distribuidoraId") || null,
@@ -21,12 +23,13 @@ export async function criarMerchan(formData: FormData) {
     observacao: formData.get("observacao") || undefined,
   });
 
-  await prisma.merchan.create({ data: { ...dados, data: new Date(dados.data) } });
+  await prisma.registroMerchan.create({ data: { ...dados, data: new Date(dados.data) } });
   revalidatePath("/merchan");
 }
 
 export async function listarMerchan() {
-  return prisma.merchan.findMany({
+  await exigirUsuario();
+  return prisma.registroMerchan.findMany({
     include: { distribuidora: true, estabelecimento: true },
     orderBy: { data: "desc" },
   });

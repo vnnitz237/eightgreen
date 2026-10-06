@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bell, ChevronDown, Menu, Search } from "lucide-react";
 import { gruposNavegacao } from "@/conteudos/navegacao";
+import { sair } from "@/app/actions/autenticacao-interna";
 
 const areas = [
   { rotulo: "Dashboard", href: "/" },
@@ -12,8 +13,9 @@ const areas = [
   { rotulo: "Financeiro", href: "/financeiro/conta-corrente" },
 ];
 
-export function Cabecalho({ abrirMenu }: { abrirMenu: () => void }) {
+export function Cabecalho({ abrirMenu, usuario }: { abrirMenu: () => void; usuario: { nome: string | null; email: string; papel: "ADMINISTRADOR" | "FUNCIONARIO" } }) {
   const pathname = usePathname();
+  const iniciais = (usuario.nome ?? usuario.email).split(/\s|@/).filter(Boolean).slice(0, 2).map((parte) => parte[0]).join("").toUpperCase();
   return <header className="cabecalho-novo">
     <div className="marca-nova"><span className="marca-folha" aria-hidden="true">8</span><strong>Eight Green</strong></div>
     <button className="menu-mobile" onClick={abrirMenu} aria-label="Abrir navegação"><Menu size={21}/></button>
@@ -23,13 +25,15 @@ export function Cabecalho({ abrirMenu }: { abrirMenu: () => void }) {
         <summary>Mais <ChevronDown size={14}/></summary>
         <div className="menu-modulos-painel">
           {gruposNavegacao.map((grupo) => <section key={grupo.titulo}><strong>{grupo.titulo}</strong>{grupo.itens.map((item) => <Link href={item.href} key={item.href}>{item.rotulo}</Link>)}</section>)}
+          {usuario.papel === "ADMINISTRADOR" && <section><strong>Administração</strong><Link href="/configuracoes/usuarios">Usuários e acessos</Link></section>}
         </div>
       </details>
     </nav>
     <div className="utilidades">
       <button aria-label="Busca indisponível nesta etapa" title="Busca indisponível nesta etapa" disabled><Search size={20}/></button>
       <button aria-label="Notificações indisponíveis nesta etapa" title="Notificações indisponíveis nesta etapa" disabled><Bell size={19}/></button>
-      <Link className="perfil-capsula" href="/configuracoes/perfil" aria-label="Abrir meu perfil"><span>EG</span><div><strong>Equipe</strong><small>Demo</small></div></Link>
+      <Link className="perfil-capsula" href="/configuracoes/perfil" aria-label="Abrir meu perfil"><span>{iniciais}</span><div><strong>{usuario.nome ?? usuario.email}</strong><small>{usuario.papel === "ADMINISTRADOR" ? "Administrador" : "Funcionário"}</small></div></Link>
+      <form action={sair}><button type="submit" className="botao-icone" title="Sair" aria-label="Sair">Sair</button></form>
     </div>
   </header>;
 }

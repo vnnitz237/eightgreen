@@ -3,24 +3,28 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { exigirPermissao } from "@/lib/autorizacao";
 
 // ─── Distribuidoras ───────────────────────────────────────────────────────────
 
 const distribuidoraSchema = z.object({ nome: z.string().min(1, "Nome obrigatório") });
 
 export async function criarDistribuidora(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = distribuidoraSchema.parse({ nome: formData.get("nome") });
   await prisma.distribuidora.create({ data: dados });
   revalidatePath("/cadastros/clientes");
 }
 
 export async function atualizarDistribuidora(id: string, formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = distribuidoraSchema.parse({ nome: formData.get("nome") });
   await prisma.distribuidora.update({ where: { id }, data: dados });
   revalidatePath("/cadastros/clientes");
 }
 
 export async function toggleAtivoDistribuidora(id: string, ativo: boolean) {
+  await exigirPermissao("MUTAR_CADASTROS");
   await prisma.distribuidora.update({ where: { id }, data: { ativo } });
   revalidatePath("/cadastros/clientes");
 }
@@ -30,18 +34,21 @@ export async function toggleAtivoDistribuidora(id: string, ativo: boolean) {
 const degustadoraSchema = z.object({ nome: z.string().min(1, "Nome obrigatório") });
 
 export async function criarDegustadora(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = degustadoraSchema.parse({ nome: formData.get("nome") });
   await prisma.degustadora.create({ data: dados });
   revalidatePath("/cadastros/degustadoras");
 }
 
 export async function atualizarDegustadora(id: string, formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = degustadoraSchema.parse({ nome: formData.get("nome") });
   await prisma.degustadora.update({ where: { id }, data: dados });
   revalidatePath("/cadastros/degustadoras");
 }
 
 export async function toggleAtivoDegustadora(id: string, ativo: boolean) {
+  await exigirPermissao("MUTAR_CADASTROS");
   await prisma.degustadora.update({ where: { id }, data: { ativo } });
   revalidatePath("/cadastros/degustadoras");
 }
@@ -51,18 +58,21 @@ export async function toggleAtivoDegustadora(id: string, ativo: boolean) {
 const fornecedorSchema = z.object({ nome: z.string().min(1, "Nome obrigatório") });
 
 export async function criarFornecedor(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = fornecedorSchema.parse({ nome: formData.get("nome") });
   await prisma.fornecedor.create({ data: dados });
   revalidatePath("/cadastros/fornecedores");
 }
 
 export async function atualizarFornecedor(id: string, formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = fornecedorSchema.parse({ nome: formData.get("nome") });
   await prisma.fornecedor.update({ where: { id }, data: dados });
   revalidatePath("/cadastros/fornecedores");
 }
 
 export async function toggleAtivoFornecedor(id: string, ativo: boolean) {
+  await exigirPermissao("MUTAR_CADASTROS");
   await prisma.fornecedor.update({ where: { id }, data: { ativo } });
   revalidatePath("/cadastros/fornecedores");
 }
@@ -77,6 +87,7 @@ const produtoSchema = z.object({
 });
 
 export async function criarProduto(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = produtoSchema.parse({
     nome: formData.get("nome"),
     unidade: formData.get("unidade") || "un",
@@ -88,6 +99,7 @@ export async function criarProduto(formData: FormData) {
 }
 
 export async function atualizarProduto(id: string, formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = produtoSchema.parse({
     nome: formData.get("nome"),
     unidade: formData.get("unidade") || "un",
@@ -99,6 +111,7 @@ export async function atualizarProduto(id: string, formData: FormData) {
 }
 
 export async function toggleAtivoProduto(id: string, ativo: boolean) {
+  await exigirPermissao("MUTAR_CADASTROS");
   await prisma.produto.update({ where: { id }, data: { ativo } });
   revalidatePath("/cadastros/produtos");
 }
@@ -108,6 +121,7 @@ export async function toggleAtivoProduto(id: string, ativo: boolean) {
 const grupoSchema = z.object({ nome: z.string().min(1, "Nome obrigatório") });
 
 export async function criarGrupoProduto(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = grupoSchema.parse({ nome: formData.get("nome") });
   await prisma.grupoProduto.create({ data: dados });
   revalidatePath("/cadastros/grupos");
@@ -116,6 +130,7 @@ export async function criarGrupoProduto(formData: FormData) {
 // ─── Canais ───────────────────────────────────────────────────────────────────
 
 export async function criarCanal(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const nome = z.string().min(1).parse(formData.get("nome"));
   await prisma.canal.create({ data: { nome } });
   revalidatePath("/cadastros/canais");
@@ -129,6 +144,7 @@ const bancoSchema = z.object({
 });
 
 export async function criarBanco(formData: FormData) {
+  await exigirPermissao("MUTAR_CADASTROS");
   const dados = bancoSchema.parse({ nome: formData.get("nome"), codigo: formData.get("codigo") || undefined });
   await prisma.banco.create({ data: dados });
   revalidatePath("/cadastros/bancos");

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: eightgreen
+      POSTGRES_USER: eightgreen
+      POSTGRES_PASSWORD: eightgreen_dev
+    ports:
+      - "55432:5432"
+    volumes:
+      - eightgreen_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eightgreen -d eightgreen"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  eightgreen_postgres_data:

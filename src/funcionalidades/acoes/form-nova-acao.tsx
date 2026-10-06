@@ -61,12 +61,9 @@ export function FormNovaAcao({ distribuidoras, estabelecimentos }: Props) {
 
           <div className="form-completo-grupo">
             <label>
-              Status
-              <select name="status" defaultValue="aberta">
-                <option value="aberta">Aberta</option>
-                <option value="encerrada">Encerrada</option>
-                <option value="cancelada">Cancelada</option>
-              </select>
+              Status inicial
+              <input value="Aberta" disabled aria-describedby="status-ajuda" />
+              <small id="status-ajuda">Novas ações sempre iniciam abertas.</small>
             </label>
             <label>
               Distribuidora (opcional)
@@ -94,7 +91,7 @@ export function FormNovaAcao({ distribuidoras, estabelecimentos }: Props) {
             {modoEstab === "cadastrado" ? (
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700 }}>ESTABELECIMENTO</span>
-                <select name="estabelecimentoId" style={{ height: 36, border: "1px solid var(--linha)", borderRadius: 7, padding: "0 11px", fontSize: 12 }}>
+                <select name="estabelecimentoId" required style={{ height: 36, border: "1px solid var(--linha)", borderRadius: 7, padding: "0 11px", fontSize: 12 }}>
                   <option value="">Selecione...</option>
                   {estabelecimentos.map((e) => (
                     <option key={e.id} value={e.id}>{e.nome}</option>
@@ -105,7 +102,7 @@ export function FormNovaAcao({ distribuidoras, estabelecimentos }: Props) {
             ) : (
               <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700 }}>NOME DO LOCAL</span>
-                <input name="estabelecimentoAvulso" placeholder="Ex: Praça Central" style={{ height: 36, border: "1px solid var(--linha)", borderRadius: 7, padding: "0 11px", fontSize: 12 }} />
+                <input name="estabelecimentoAvulso" required placeholder="Ex: Praça Central" style={{ height: 36, border: "1px solid var(--linha)", borderRadius: 7, padding: "0 11px", fontSize: 12 }} />
                 <input type="hidden" name="estabelecimentoId" value="" />
               </label>
             )}

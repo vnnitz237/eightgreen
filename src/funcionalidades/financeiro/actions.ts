@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { exigirPermissao } from "@/lib/autorizacao";
 
 const contaSchema = z.object({
   descricao: z.string().min(1, "Descrição obrigatória"),
@@ -12,6 +13,7 @@ const contaSchema = z.object({
 });
 
 export async function criarConta(formData: FormData) {
+  await exigirPermissao("MUTAR_FINANCEIRO");
   const dados = contaSchema.parse({
     descricao: formData.get("descricao"),
     valor: formData.get("valor"),
@@ -29,6 +31,7 @@ export async function criarConta(formData: FormData) {
 }
 
 export async function marcarComoPago(id: string) {
+  await exigirPermissao("MUTAR_FINANCEIRO");
   await prisma.contaFinanceira.update({ where: { id }, data: { pago: true } });
   revalidatePath("/financeiro/conta-corrente");
   revalidatePath("/financeiro/a-pagar");
@@ -42,6 +45,7 @@ const despesaSchema = z.object({
 });
 
 export async function criarDespesa(formData: FormData) {
+  await exigirPermissao("MUTAR_FINANCEIRO");
   const dados = despesaSchema.parse({
     descricao: formData.get("descricao"),
     valor: formData.get("valor"),

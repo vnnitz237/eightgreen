@@ -1,4 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { validarAmbienteServidor } from "@/lib/ambiente";
+
+validarAmbienteServidor();
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 

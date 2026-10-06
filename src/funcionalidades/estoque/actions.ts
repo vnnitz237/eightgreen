@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { exigirPermissao } from "@/lib/autorizacao";
 
 const movimentacaoSchema = z.object({
   produtoId: z.string().min(1, "Produto obrigatório"),
@@ -12,6 +13,7 @@ const movimentacaoSchema = z.object({
 });
 
 export async function registrarMovimentacao(formData: FormData) {
+  await exigirPermissao("MUTAR_ESTOQUE");
   const dados = movimentacaoSchema.parse({
     produtoId: formData.get("produtoId"),
     tipo: formData.get("tipo"),

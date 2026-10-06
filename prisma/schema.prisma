@@ -28,55 +28,183 @@ enum TipoContaFinanceira {
   despesa
 }
 
+enum PapelUsuario {
+  ADMINISTRADOR
+  FUNCIONARIO
+}
+
+enum EstadoConvite {
+  PENDENTE
+  ACEITO
+  ENVIO_FALHOU
+}
+
+enum TipoDocumentoEstoque {
+  ENTRADA
+  SAIDA
+  INVENTARIO
+}
+
+enum StatusDocumentoEstoque {
+  ABERTO
+  ENCERRADO
+  CANCELADO
+}
+
+enum StatusContaPagar {
+  ABERTA
+  PAGA
+  CANCELADA
+}
+
+enum StatusContaReceber {
+  ABERTA
+  RECEBIDA
+  CANCELADA
+}
+
+enum StatusDespesaEmpresarial {
+  ABERTA
+  ENCERRADA
+  CANCELADA
+}
+
+enum TipoLancamentoCC {
+  DEBITO
+  CREDITO
+}
+
 // ─── Cadastros base ──────────────────────────────────────────────────────────
 
 model Distribuidora {
-  id        String   @id @default(cuid())
-  nome      String
-  ativo     Boolean  @default(true)
+  id       String   @id @default(cuid())
+  nome     String
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
-  acoes   Acao[]
-  merchan Merchan[]
+  canal   Canal?  @relation(fields: [canalId], references: [id], onDelete: SetNull)
+  canalId String? @map("canal_id")
+
+  acoes            Acao[]
+  estabelecimentos Estabelecimento[]
+  registrosMerchan RegistroMerchan[]
 
   @@map("distribuidoras")
 }
 
 model Estabelecimento {
-  id        String   @id @default(cuid())
-  nome      String
-  ativo     Boolean  @default(true)
+  id       String   @id @default(cuid())
+  nome     String
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
-  acoes   Acao[]
-  merchan Merchan[]
+  endereco String?
+
+  distribuidora   Distribuidora? @relation(fields: [distribuidoraId], references: [id], onDelete: SetNull)
+  distribuidoraId String?        @map("distribuidora_id")
+  canal           Canal?         @relation(fields: [canalId], references: [id], onDelete: SetNull)
+  canalId         String?        @map("canal_id")
+
+  acoes            Acao[]
+  registrosMerchan RegistroMerchan[]
+  contasReceber    ContaReceber[]
+  contasCorrentes  ContaCorrenteCliente[]
+  rotas            RotaEstabelecimento[]
 
   @@map("estabelecimentos")
 }
 
 model Degustadora {
-  id        String   @id @default(cuid())
-  nome      String
-  ativo     Boolean  @default(true)
+  id       String   @id @default(cuid())
+  nome     String
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
-  participacoes AcaoProfissional[]
+  telefone String?
+  email    String?
+
+  fornecedor    Fornecedor?       @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  fornecedorId  String?           @map("fornecedor_id")
+  participacoes AcaoDegustadora[]
+  contasPagar   ContaPagar[]
+  usuario       Usuario?
 
   @@map("degustadoras")
 }
 
+// Usuário de autenticação é distinto dos cadastros de negócio.
+model Usuario {
+  id                 String        @id @default(cuid())
+  name               String
+  email              String        @unique
+  passwordHash       String?       @map("password_hash")
+  mustChangePassword Boolean       @default(true) @map("must_change_password")
+  estadoConvite      EstadoConvite @default(PENDENTE) @map("estado_convite")
+  credencialExpiraEm DateTime?     @map("credencial_expira_em")
+  conviteEnviadoEm   DateTime?     @map("convite_enviado_em")
+  conviteAceitoEm    DateTime?     @map("convite_aceito_em")
+  papel              PapelUsuario  @default(FUNCIONARIO)
+  ativo              Boolean       @default(true)
+  ultimoAcesso       DateTime?     @map("ultimo_acesso")
+  criadoEm           DateTime      @default(now()) @map("criado_em")
+  atualizadoEm       DateTime      @updatedAt @map("atualizado_em")
+
+  degustadora      Degustadora?         @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
+  degustadoraId    String?              @unique @map("degustadora_id")
+  sessoes          Sessao[]
+  auditorias       Auditoria[]
+  compromissos     Compromisso[]
+  registrosMerchan RegistroMerchan[]
+  rotas            Rota[]
+  despesas         DespesaEmpresarial[]
+
+  @@map("usuarios")
+}
+
+model Sessao {
+  sessionToken String   @unique @map("token_sessao")
+  userId       String   @map("usuario_id")
+  expires      DateTime @map("expira_em")
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  user         Usuario  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessoes")
+}
+
+model Auditoria {
+  id              String   @id @default(cuid())
+  operacao        String
+  entidade        String
+  registroId      String   @map("registro_id")
+  estadoAnterior  Json?    @map("estado_anterior")
+  estadoPosterior Json?    @map("estado_posterior")
+  criadoEm        DateTime @default(now()) @map("criado_em")
+
+  autor   Usuario @relation(fields: [autorId], references: [id], onDelete: Restrict)
+  autorId String  @map("autor_id")
+
+  @@index([entidade, registroId])
+  @@index([autorId, criadoEm])
+  @@map("auditorias")
+}
+
 model Fornecedor {
-  id        String   @id @default(cuid())
-  nome      String
-  ativo     Boolean  @default(true)
+  id       String   @id @default(cuid())
+  nome     String
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
+
+  documentosEstoque DocumentoEstoque[]
+  contasPagar       ContaPagar[]
+  degustadoras      Degustadora[]
 
   @@map("fornecedores")
 }
 
 model GrupoProduto {
-  id        String   @id @default(cuid())
-  nome      String
+  id       String   @id @default(cuid())
+  nome     String
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
 
   produtos Produto[]
@@ -85,18 +213,26 @@ model GrupoProduto {
 }
 
 model Canal {
-  id        String   @id @default(cuid())
-  nome      String
+  id       String   @id @default(cuid())
+  nome     String
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
+
+  distribuidoras   Distribuidora[]
+  estabelecimentos Estabelecimento[]
 
   @@map("canais")
 }
 
 model Banco {
-  id        String   @id @default(cuid())
-  nome      String
-  codigo    String?
+  id       String   @id @default(cuid())
+  nome     String
+  codigo   String?
+  ativo    Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
+
+  contasPagar   ContaPagar[]
+  contasReceber ContaReceber[]
 
   @@map("bancos")
 }
@@ -107,13 +243,15 @@ model Produto {
   unidade       String   @default("un")
   estoqueMinimo Int      @default(0) @map("estoque_minimo")
   ativo         Boolean  @default(true)
-  criadoEm     DateTime @default(now()) @map("criado_em")
+  criadoEm      DateTime @default(now()) @map("criado_em")
 
   grupo   GrupoProduto? @relation(fields: [grupoId], references: [id])
   grupoId String?       @map("grupo_id")
 
-  acoesProduto  AcaoProduto[]
-  movimentacoes MovimentacaoEstoque[]
+  acoesProduto     AcaoProduto[]
+  movimentacoes    MovimentacaoEstoque[]
+  documentosItem   DocumentoEstoqueItem[]
+  registrosMerchan RegistroMerchanProduto[]
 
   @@map("produtos")
 }
@@ -130,20 +268,22 @@ model Acao {
   distribuidora   Distribuidora? @relation(fields: [distribuidoraId], references: [id])
   distribuidoraId String?        @map("distribuidora_id")
 
-  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
-  estabelecimentoId String?          @map("estabelecimento_id")
-  estabelecimentoAvulso String?      @map("estabelecimento_avulso")
+  estabelecimento       Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
+  estabelecimentoId     String?          @map("estabelecimento_id")
+  estabelecimentoAvulso String?          @map("estabelecimento_avulso")
 
-  profissionais AcaoProfissional[]
+  profissionais AcaoDegustadora[]
   produtos      AcaoProduto[]
 
-  criadoEm    DateTime @default(now()) @map("criado_em")
-  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+  criadoEm          DateTime           @default(now()) @map("criado_em")
+  atualizadoEm      DateTime           @updatedAt @map("atualizado_em")
+  documentosEstoque DocumentoEstoque[]
+  contasReceber     ContaReceber[]
 
   @@map("acoes")
 }
 
-model AcaoProfissional {
+model AcaoDegustadora {
   id String @id @default(cuid())
 
   acao   Acao   @relation(fields: [acaoId], references: [id], onDelete: Cascade)
@@ -152,7 +292,10 @@ model AcaoProfissional {
   degustadora   Degustadora? @relation(fields: [degustadoraId], references: [id])
   degustadoraId String?      @map("degustadora_id")
 
-  nomeAvulso String? @map("nome_avulso")
+  nomeAvulso      String? @map("nome_avulso")
+  valorIndividual Decimal @default(0) @map("valor_individual") @db.Decimal(12, 2)
+
+  contasPagar ContaPagar[]
 
   @@map("acao_profissionais")
 }
@@ -178,24 +321,64 @@ model MovimentacaoEstoque {
   tipo       TipoMovimentacaoEstoque
   quantidade Int
   observacao String?
-  criadoEm  DateTime                @default(now()) @map("criado_em")
+  criadoEm   DateTime                @default(now()) @map("criado_em")
 
   produto   Produto @relation(fields: [produtoId], references: [id])
   produtoId String  @map("produto_id")
 
+  documentoItem   DocumentoEstoqueItem? @relation(fields: [documentoItemId], references: [id], onDelete: SetNull)
+  documentoItemId String?               @map("documento_item_id")
+
   @@map("movimentacoes_estoque")
+}
+
+model DocumentoEstoque {
+  id           String                 @id @default(cuid())
+  tipo         TipoDocumentoEstoque
+  status       StatusDocumentoEstoque @default(ABERTO)
+  data         DateTime               @db.Date
+  numeroNota   String?                @map("numero_nota")
+  serieNota    String?                @map("serie_nota")
+  observacao   String?
+  criadoEm     DateTime               @default(now()) @map("criado_em")
+  atualizadoEm DateTime               @updatedAt @map("atualizado_em")
+
+  fornecedor   Fornecedor?            @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  fornecedorId String?                @map("fornecedor_id")
+  acao         Acao?                  @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId       String?                @map("acao_id")
+  itens        DocumentoEstoqueItem[]
+
+  @@map("documentos_estoque")
+}
+
+model DocumentoEstoqueItem {
+  id             String   @id @default(cuid())
+  quantidade     Decimal  @db.Decimal(14, 3)
+  valorUnitario  Decimal? @map("valor_unitario") @db.Decimal(12, 2)
+  saldoSistema   Decimal? @map("saldo_sistema") @db.Decimal(14, 3)
+  contagemFisica Decimal? @map("contagem_fisica") @db.Decimal(14, 3)
+
+  documento     DocumentoEstoque      @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  documentoId   String                @map("documento_id")
+  produto       Produto               @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  produtoId     String                @map("produto_id")
+  movimentacoes MovimentacaoEstoque[]
+
+  @@unique([documentoId, produtoId])
+  @@map("documentos_estoque_itens")
 }
 
 // ─── Financeiro ──────────────────────────────────────────────────────────────
 
 model ContaFinanceira {
-  id        String              @id @default(cuid())
-  descricao String
-  valor     Decimal             @db.Decimal(12, 2)
-  tipo      TipoContaFinanceira
-  vencimento DateTime           @db.Date
-  pago      Boolean             @default(false)
-  criadoEm DateTime            @default(now()) @map("criado_em")
+  id         String              @id @default(cuid())
+  descricao  String
+  valor      Decimal             @db.Decimal(12, 2)
+  tipo       TipoContaFinanceira
+  vencimento DateTime            @db.Date
+  pago       Boolean             @default(false)
+  criadoEm   DateTime            @default(now()) @map("criado_em")
 
   @@map("contas_financeiras")
 }
@@ -205,38 +388,167 @@ model DespesaOperacional {
   descricao String
   valor     Decimal  @db.Decimal(12, 2)
   data      DateTime @db.Date
-  criadoEm DateTime @default(now()) @map("criado_em")
+  criadoEm  DateTime @default(now()) @map("criado_em")
 
   @@map("despesas_operacionais")
 }
 
+model ContaPagar {
+  id            String           @id @default(cuid())
+  descricao     String
+  valor         Decimal          @db.Decimal(12, 2)
+  emissao       DateTime         @db.Date
+  vencimento    DateTime         @db.Date
+  status        StatusContaPagar @default(ABERTA)
+  dataPagamento DateTime?        @map("data_pagamento") @db.Date
+  favorecido    String?
+  criadoEm      DateTime         @default(now()) @map("criado_em")
+  atualizadoEm  DateTime         @updatedAt @map("atualizado_em")
+
+  banco                Banco?              @relation(fields: [bancoId], references: [id], onDelete: SetNull)
+  bancoId              String?             @map("banco_id")
+  fornecedor           Fornecedor?         @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  fornecedorId         String?             @map("fornecedor_id")
+  degustadora          Degustadora?        @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
+  degustadoraId        String?             @map("degustadora_id")
+  acaoDegustadora      AcaoDegustadora?    @relation(fields: [acaoDegustadoraId], references: [id], onDelete: SetNull)
+  acaoDegustadoraId    String?             @map("acao_degustadora_id")
+  despesaEmpresarial   DespesaEmpresarial? @relation(fields: [despesaEmpresarialId], references: [id], onDelete: SetNull)
+  despesaEmpresarialId String?             @map("despesa_empresarial_id")
+
+  @@map("contas_pagar")
+}
+
+model ContaReceber {
+  id              String             @id @default(cuid())
+  descricao       String
+  valor           Decimal            @db.Decimal(12, 2)
+  emissao         DateTime           @db.Date
+  vencimento      DateTime           @db.Date
+  status          StatusContaReceber @default(ABERTA)
+  dataRecebimento DateTime?          @map("data_recebimento") @db.Date
+  criadoEm        DateTime           @default(now()) @map("criado_em")
+  atualizadoEm    DateTime           @updatedAt @map("atualizado_em")
+
+  banco             Banco?           @relation(fields: [bancoId], references: [id], onDelete: SetNull)
+  bancoId           String?          @map("banco_id")
+  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id], onDelete: SetNull)
+  estabelecimentoId String?          @map("estabelecimento_id")
+  acao              Acao?            @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId            String?          @map("acao_id")
+  lancamentosCC     LancamentoCC[]
+
+  @@map("contas_receber")
+}
+
+model DespesaEmpresarial {
+  id           String                   @id @default(cuid())
+  descricao    String
+  dataInicio   DateTime                 @map("data_inicio") @db.Date
+  dataFim      DateTime                 @map("data_fim") @db.Date
+  destino      String?
+  status       StatusDespesaEmpresarial @default(ABERTA)
+  criadoEm     DateTime                 @default(now()) @map("criado_em")
+  atualizadoEm DateTime                 @updatedAt @map("atualizado_em")
+
+  responsavel   Usuario?      @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId String?       @map("responsavel_id")
+  itens         DespesaItem[]
+  contasPagar   ContaPagar[]
+
+  @@map("despesas_empresariais")
+}
+
+model DespesaItem {
+  id          String   @id @default(cuid())
+  data        DateTime @db.Date
+  tipo        String
+  descricao   String?
+  valor       Decimal  @db.Decimal(12, 2)
+  comprovante String?
+
+  despesa   DespesaEmpresarial @relation(fields: [despesaId], references: [id], onDelete: Cascade)
+  despesaId String             @map("despesa_id")
+
+  @@map("despesas_itens")
+}
+
+model ContaCorrenteCliente {
+  id       String   @id @default(cuid())
+  criadoEm DateTime @default(now()) @map("criado_em")
+
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Restrict)
+  estabelecimentoId String          @unique @map("estabelecimento_id")
+  lancamentos       LancamentoCC[]
+
+  @@map("contas_correntes_clientes")
+}
+
+model LancamentoCC {
+  id        String           @id @default(cuid())
+  data      DateTime         @db.Date
+  historico String
+  tipo      TipoLancamentoCC
+  valor     Decimal          @db.Decimal(12, 2)
+  origem    String           @default("MANUAL")
+  criadoEm  DateTime         @default(now()) @map("criado_em")
+
+  contaCorrente   ContaCorrenteCliente @relation(fields: [contaCorrenteId], references: [id], onDelete: Cascade)
+  contaCorrenteId String               @map("conta_corrente_id")
+  contaReceber    ContaReceber?        @relation(fields: [contaReceberId], references: [id], onDelete: SetNull)
+  contaReceberId  String?              @map("conta_receber_id")
+
+  @@map("lancamentos_cc")
+}
+
 // ─── Merchan ─────────────────────────────────────────────────────────────────
 
-model Merchan {
-  id         String   @id @default(cuid())
-  data       DateTime @db.Date
-  observacao String?
-  criadoEm  DateTime @default(now()) @map("criado_em")
+model RegistroMerchan {
+  id            String   @id @default(cuid())
+  data          DateTime @db.Date
+  observacao    String?
+  tipoAtividade String?  @map("tipo_atividade")
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  foto          String?
+  criadoEm      DateTime @default(now()) @map("criado_em")
 
-  distribuidora   Distribuidora?   @relation(fields: [distribuidoraId], references: [id])
-  distribuidoraId String?          @map("distribuidora_id")
+  distribuidora   Distribuidora? @relation(fields: [distribuidoraId], references: [id])
+  distribuidoraId String?        @map("distribuidora_id")
 
-  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
-  estabelecimentoId String?          @map("estabelecimento_id")
-  estabelecimentoAvulso String?      @map("estabelecimento_avulso")
+  estabelecimento       Estabelecimento? @relation(fields: [estabelecimentoId], references: [id])
+  estabelecimentoId     String?          @map("estabelecimento_id")
+  estabelecimentoAvulso String?          @map("estabelecimento_avulso")
+
+  responsavel   Usuario?                 @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId String?                  @map("responsavel_id")
+  produtos      RegistroMerchanProduto[]
 
   @@map("merchan")
+}
+
+model RegistroMerchanProduto {
+  registro   RegistroMerchan @relation(fields: [registroId], references: [id], onDelete: Cascade)
+  registroId String          @map("registro_id")
+  produto    Produto         @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  produtoId  String          @map("produto_id")
+
+  @@id([registroId, produtoId])
+  @@map("registros_merchan_produtos")
 }
 
 // ─── Pessoal ─────────────────────────────────────────────────────────────────
 
 model Compromisso {
-  id        String   @id @default(cuid())
-  titulo    String
-  data      DateTime @db.Date
-  horario   String?
-  privado   Boolean  @default(true)
+  id       String   @id @default(cuid())
+  titulo   String
+  data     DateTime @db.Date
+  horario  String?
+  privado  Boolean  @default(true)
   criadoEm DateTime @default(now()) @map("criado_em")
+
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String?  @map("usuario_id")
 
   @@map("compromissos")
 }
@@ -245,7 +557,23 @@ model Rota {
   id        String   @id @default(cuid())
   descricao String
   data      DateTime @db.Date
-  criadoEm DateTime @default(now()) @map("criado_em")
+  criadoEm  DateTime @default(now()) @map("criado_em")
+
+  ativo            Boolean               @default(true)
+  responsavel      Usuario?              @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId    String?               @map("responsavel_id")
+  estabelecimentos RotaEstabelecimento[]
 
   @@map("rotas")
+}
+
+model RotaEstabelecimento {
+  rota              Rota            @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  rotaId            String          @map("rota_id")
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Restrict)
+  estabelecimentoId String          @map("estabelecimento_id")
+  ordem             Int?
+
+  @@id([rotaId, estabelecimentoId])
+  @@map("rotas_estabelecimentos")
 }

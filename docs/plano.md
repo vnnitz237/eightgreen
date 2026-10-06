@@ -2,8 +2,8 @@
 
 ## Sequência e critérios de conclusão
 
-1. **Base visual e arquitetura (esta entrega).** Concluída quando shell responsivo, Dashboard demonstrativo funcional, contratos iniciais, rotas e documentação passam em typecheck, lint, testes, build e inspeção visual.
-2. **Autenticação real e autorização no servidor.** Sessão segura, recuperação e encerramento, negação por padrão, matriz validada, políticas por operação/registro e testes de acesso. Agenda privada não é herdada por cargo.
+1. **Base visual e arquitetura.** Concluída: shell responsivo, Dashboard e rotas preservados.
+2. **Autenticação real e autorização no servidor (implementada; integração pendente).** Login interno, senhas bcrypt, sessões persistidas, credencial temporária, troca obrigatória e política por operação estão no código. Falta validar o fluxo completo com PostgreSQL e envio real de e-mail.
 3. **Cadastros mínimos.** Distribuidoras, estabelecimentos (se confirmados), degustadoras, fornecedores, vínculo explícito, produtos e auxiliares persistidos com validação, auditoria e pesquisa.
 4. **Ações persistidas.** Criar, editar e consultar com participantes/produtos, inclusive variantes avulsas, concorrência tratada e testes do fluxo principal.
 5. **Checkout.** Somente após campos, transições e efeitos serem aprovados; operação idempotente e transacional.
@@ -23,6 +23,6 @@
 - Validação e reconciliação da migração.
 - Observabilidade, backups, política de retenção e tratamento LGPD antes da produção.
 
-## Fora da Etapa 1
+## Fora da rodada atual
 
-Autenticação, banco, schema Prisma, CRUDs, checkout, pagamentos, comissões, baixas de estoque, integrações, publicação e migração não foram implementados.
+Checkout, pagamentos, comissões, efeitos automáticos em estoque/financeiro, integrações, publicação e migração de dados legados continuam fora do escopo.

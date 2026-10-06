@@ -1,10 +1,10 @@
 # Arquitetura da base
 
-## Decisões da Etapa 1
+## Decisões atuais
 
 - Next.js 16.3.7 com App Router, React 19.3, TypeScript estrito e Tailwind CSS 4.3.3.
-- PostgreSQL e Prisma são a direção de persistência, mas nenhum schema foi fechado nesta etapa. O modelo do diagnóstico é ilustrativo e contém relações que precisam ser corrigidas.
-- Dados sintéticos ficam atrás do contrato `RepositorioAcoes`. A interface consome tipos e consultas do domínio, permitindo trocar o repositório demonstrativo por Prisma sem reescrever os componentes.
+- PostgreSQL 16 e Prisma 5.22 são a persistência operacional. A migration inicial é versionada; o schema continua evolutivo e não replica cegamente o diagnóstico.
+- Leituras operacionais usam Prisma em Server Components. Dados sintéticos existem apenas no seed de desenvolvimento.
 - Leitura inicial de páginas: Server Components. Interações locais como o filtro: Client Components. Mutações internas autenticadas: Server Actions, com validação e autorização repetidas no servidor. Route Handlers serão usados somente para integrações, webhooks, downloads ou APIs consumidas fora do aplicativo.
 - Zod valida limites de entrada. Datas de domínio são representadas explicitamente; a política definitiva de fuso será validada antes da persistência.
 - A paleta verde-petróleo, lima discreto e neutros é provisória. Ela diferencia a demonstração sem alegar ser identidade oficial da Eight Green.
@@ -20,18 +20,18 @@ src/funcionalidades        tipos, schemas, consultas, serviços e componentes po
 src/conteudos              navegação e conteúdo estático
 src/lib                    infraestrutura transversal
 docs                       requisitos, decisões, rotas e plano
-prisma                     será criado junto do primeiro schema validado
+prisma                     schema, migrations e seed sintético
 ```
 
 Páginas permanecem finas; regras e consultas ficam em `funcionalidades`. Pastas são introduzidas somente quando possuem conteúdo.
 
 ## Fronteira de dados
 
-`RepositorioAcoes` define a porta de leitura. `repositorioAcoesDemonstrativo` é o adaptador temporário. O futuro adaptador Prisma deve retornar o mesmo contrato de domínio, sem expor modelos gerados à camada visual. Operações que afetem estoque ou financeiro precisarão de transação, idempotência, histórico e estorno.
+Consultas e mutações ficam em `src/funcionalidades`; componentes não abrem conexões diretamente. Operações que afetem estoque ou financeiro precisarão de transação, idempotência, histórico e estorno. Criar ou editar uma ação não movimenta estoque nem financeiro.
 
 ## Autenticação e autorização
 
-Não há autenticação falsa. `/login` informa a limitação e oferece apenas acesso à demonstração local. Na próxima etapa, a sessão será validada no servidor; autorização será por operação e por registro, com negação por padrão. A matriz de cargos não será codificada antes de validação. Diretoria não terá acesso automático aos compromissos pessoais de terceiros. Degustadora (cadastro de negócio) é distinta de usuário de autenticação e pode ter vínculo opcional.
+O login interno usa e-mail normalizado, hash bcrypt e sessões persistidas no PostgreSQL. O cookie contém token aleatório; somente seu HMAC é persistido. Não há cadastro público ou provisionamento automático. O proprietário inicial é criado por comando administrativo idempotente e os demais integrantes somente por administrador. Credenciais temporárias expiram em 48 horas e exigem troca antes do acesso interno. A política central mantém `ADMINISTRADOR` com mutações e `FUNCIONARIO` em leitura. Degustadora continua separada, com vínculo opcional.
 
 ## Mapa dos módulos e relações
 
