@@ -57,6 +57,14 @@ enum StatusContaPagar {
   CANCELADA
 }
 
+enum TipoCompromisso {
+  REUNIAO
+  VISITA
+  ENTREGA
+  DEGUSTACAO
+  OUTRO
+}
+
 enum StatusContaReceber {
   ABERTA
   RECEBIDA
@@ -122,6 +130,7 @@ model Estabelecimento {
   contasReceber    ContaReceber[]
   contasCorrentes  ContaCorrenteCliente[]
   rotas            RotaEstabelecimento[]
+  compromissos     Compromisso[]
 
   @@map("estabelecimentos")
 }
@@ -174,7 +183,7 @@ model Usuario {
   degustadoraId    String?              @unique @map("degustadora_id")
   sessoes          Sessao[]
   auditorias       Auditoria[]
-  compromissos     Compromisso[]
+  compromissosResponsavel Compromisso[] @relation("CompromissoResponsavel")
   registrosMerchan RegistroMerchan[]
   rotas            Rota[]
   despesas         DespesaEmpresarial[]
@@ -318,6 +327,7 @@ model Acao {
   profissionais     AcaoProfissional[]
   produtos          AcaoProduto[]
   acaoDegustadoras  AcaoDegustadora[]
+  compromissos      Compromisso[]
 
   criadoEm          DateTime           @default(now()) @map("criado_em")
   atualizadoEm      DateTime           @updatedAt @map("atualizado_em")
@@ -602,15 +612,22 @@ model RegistroMerchanProduto {
 // ─── Pessoal ─────────────────────────────────────────────────────────────────
 
 model Compromisso {
-  id       String   @id @default(cuid())
-  titulo   String
-  data     DateTime @db.Date
-  horario  String?
-  privado  Boolean  @default(true)
-  criadoEm DateTime @default(now()) @map("criado_em")
+  id          String          @id @default(cuid())
+  titulo      String
+  tipo        TipoCompromisso @default(OUTRO)
+  inicio      DateTime
+  fim         DateTime
+  diaInteiro  Boolean         @default(false) @map("dia_inteiro")
+  observacoes String?
+  criadoEm    DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime       @updatedAt @map("atualizado_em")
 
-  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  usuarioId String?  @map("usuario_id")
+  responsavel       Usuario?         @relation("CompromissoResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId     String?          @map("responsavel_id")
+  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id], onDelete: SetNull)
+  estabelecimentoId String?          @map("estabelecimento_id")
+  acao              Acao?            @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId            String?          @map("acao_id")
 
   @@map("compromissos")
 }

@@ -7,27 +7,35 @@ import { exigirPermissao, exigirUsuario } from "@/lib/autorizacao";
 
 const compromissoSchema = z.object({
   titulo: z.string().min(1, "Título obrigatório"),
-  data: z.string().date("Data inválida"),
-  horario: z.string().optional(),
-  privado: z.coerce.boolean().default(true),
+  inicio: z.string().datetime({ offset: true }),
+  fim: z.string().datetime({ offset: true }),
+  diaInteiro: z.coerce.boolean().default(false),
 });
 
 export async function criarCompromisso(formData: FormData) {
   await exigirPermissao("MUTAR_PESSOAL");
   const dados = compromissoSchema.parse({
     titulo: formData.get("titulo"),
-    data: formData.get("data"),
-    horario: formData.get("horario") || undefined,
-    privado: formData.get("privado") !== "false",
+    inicio: formData.get("inicio"),
+    fim: formData.get("fim"),
+    diaInteiro: formData.get("diaInteiro") === "true",
   });
 
-  await prisma.compromisso.create({ data: { ...dados, data: new Date(dados.data) } });
+  await prisma.compromisso.create({
+    data: {
+      titulo: dados.titulo,
+      inicio: new Date(dados.inicio),
+      fim: new Date(dados.fim),
+      diaInteiro: dados.diaInteiro,
+    },
+  });
   revalidatePath("/pessoal/agenda");
+  revalidatePath("/agenda");
 }
 
 export async function listarCompromissos() {
   await exigirUsuario();
-  return prisma.compromisso.findMany({ orderBy: { data: "asc" } });
+  return prisma.compromisso.findMany({ orderBy: { inicio: "asc" } });
 }
 
 const rotaSchema = z.object({

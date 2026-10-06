@@ -1,14 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
-import { criarCompromisso, listarCompromissos } from "@/funcionalidades/pessoal/actions";
+import { listarCompromissos } from "@/funcionalidades/pessoal/actions";
 import { formatarDataCurta } from "@/lib/formatadores";
 
 export default async function AgendaPage() {
   const compromissos = await listarCompromissos();
   const hoje = new Date().toISOString().slice(0, 10);
-  const futuros = compromissos.filter((c) => c.data.toISOString().slice(0, 10) >= hoje);
-  const passados = compromissos.filter((c) => c.data.toISOString().slice(0, 10) < hoje);
+  const futuros = compromissos.filter((c) => c.inicio.toISOString().slice(0, 10) >= hoje);
+  const passados = compromissos.filter((c) => c.inicio.toISOString().slice(0, 10) < hoje);
 
   return (
     <div className="pagina-conteudo">
@@ -22,14 +22,14 @@ export default async function AgendaPage() {
         {futuros.length > 0 ? (
           <div className="tabela-wrap">
             <table>
-              <thead><tr><th>Título</th><th>Data</th><th>Horário</th><th>Privado</th></tr></thead>
+              <thead><tr><th>Título</th><th>Início</th><th>Fim</th><th>Tipo</th></tr></thead>
               <tbody>
                 {futuros.map((c) => (
                   <tr key={c.id}>
                     <td><strong>{c.titulo}</strong></td>
-                    <td>{formatarDataCurta(c.data.toISOString().slice(0, 10))}</td>
-                    <td>{c.horario ?? <span style={{ color: "var(--muted)" }}>—</span>}</td>
-                    <td><span className={c.privado ? "tag tag-inativo" : "tag tag-ativo"}>{c.privado ? "Privado" : "Público"}</span></td>
+                    <td>{formatarDataCurta(c.inicio.toISOString().slice(0, 10))}</td>
+                    <td>{c.diaInteiro ? <span style={{ color: "var(--cor-texto-3)" }}>Dia inteiro</span> : formatarDataCurta(c.fim.toISOString().slice(0, 10))}</td>
+                    <td><span className="tag">{c.tipo}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -38,17 +38,6 @@ export default async function AgendaPage() {
         ) : (
           <div className="estado-vazio"><strong>Nenhum compromisso futuro</strong></div>
         )}
-
-        <form className="form-criar" action={criarCompromisso}>
-          <label>Título<input name="titulo" required placeholder="Ex: Reunião com distribuidora" /></label>
-          <label>Data<input name="data" type="date" required defaultValue={hoje} /></label>
-          <label>Horário (opcional)<input name="horario" type="time" /></label>
-          <label style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <input type="checkbox" name="privado" value="true" defaultChecked />
-            Privado
-          </label>
-          <button type="submit">Adicionar</button>
-        </form>
       </div>
 
       {passados.length > 0 && (
@@ -58,13 +47,13 @@ export default async function AgendaPage() {
           </div>
           <div className="tabela-wrap">
             <table>
-              <thead><tr><th>Título</th><th>Data</th><th>Horário</th></tr></thead>
+              <thead><tr><th>Título</th><th>Data</th><th>Tipo</th></tr></thead>
               <tbody>
                 {passados.map((c) => (
                   <tr key={c.id} style={{ opacity: 0.6 }}>
                     <td><strong>{c.titulo}</strong></td>
-                    <td>{formatarDataCurta(c.data.toISOString().slice(0, 10))}</td>
-                    <td>{c.horario ?? "—"}</td>
+                    <td>{formatarDataCurta(c.inicio.toISOString().slice(0, 10))}</td>
+                    <td>{c.tipo}</td>
                   </tr>
                 ))}
               </tbody>

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, CalendarDays, CircleDollarSign, Gauge, Settings2, UsersRound, X } from "lucide-react";
+import { Boxes, CalendarClock, CalendarDays, CircleDollarSign, Gauge, Settings2, UsersRound, X } from "lucide-react";
 
 const destinos = [
   { rotulo: "Visão geral", href: "/", icone: Gauge },
   { rotulo: "Ações", href: "/acoes", icone: CalendarDays },
+  { rotulo: "Agenda", href: "/agenda", icone: CalendarClock },
   { rotulo: "Estoque", href: "/estoque/saldo", icone: Boxes },
   { rotulo: "Financeiro", href: "/financeiro/conta-corrente", icone: CircleDollarSign },
 ];
