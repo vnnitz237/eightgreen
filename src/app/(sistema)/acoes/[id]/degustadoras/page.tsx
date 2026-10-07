@@ -6,8 +6,10 @@ import { ArrowLeft } from "lucide-react";
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { formatarDataCurta } from "@/lib/formatadores";
 import { prisma } from "@/lib/prisma";
+import { exigirPermissaoPagina } from "@/lib/autorizacao";
 
 export default async function DegustadorasAcaoPage({ params }: { params: Promise<{ id: string }> }) {
+  await exigirPermissaoPagina("MUTAR_ACOES");
   const { id } = await params;
 
   const acao = await prisma.acao.findUnique({

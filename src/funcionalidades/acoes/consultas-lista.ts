@@ -8,6 +8,7 @@ export type FiltrosAcao = {
   distribuidoraId?: string;
   estabelecimentoId?: string;
   pagina?: number;
+  degustadoraId?: string;
 };
 
 const POR_PAGINA = 20;
@@ -44,6 +45,10 @@ export async function listarAcoesComFiltros(filtros: FiltrosAcao = {}) {
 
   if (filtros.estabelecimentoId) {
     where.estabelecimentoId = filtros.estabelecimentoId;
+  }
+
+  if (filtros.degustadoraId) {
+    where.acaoDegustadoras = { some: { degustadoraId: filtros.degustadoraId } };
   }
 
   const [acoes, total] = await Promise.all([

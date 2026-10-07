@@ -82,3 +82,38 @@ export async function buscarDadosDashboard(): Promise<{
 
   return { acoes, saldoEstoque, alertas: { cpVencidas, crVencidas, saldoNegativo } };
 }
+
+export async function buscarAcoesDegustadora(degustadoraId: string | null): Promise<AcaoPromocional[]> {
+  if (!degustadoraId) return [];
+  const acoesDb = await prisma.acao.findMany({
+    where: { acaoDegustadoras: { some: { degustadoraId } } },
+    include: {
+      distribuidora: true,
+      estabelecimento: true,
+      profissionais: { include: { degustadora: true } },
+      produtos: { include: { produto: true } },
+    },
+    orderBy: { data: "asc" },
+  });
+  return acoesDb.map((acao) => ({
+    id: acao.id,
+    titulo: acao.titulo,
+    data: acao.data.toISOString().slice(0, 10),
+    horario: acao.horario as `${number}:${number}`,
+    status: acao.status,
+    distribuidora: acao.distribuidora ? { id: acao.distribuidora.id, nome: acao.distribuidora.nome } : null,
+    estabelecimento: acao.estabelecimentoId && acao.estabelecimento
+      ? { modo: "cadastrado", id: acao.estabelecimento.id, nome: acao.estabelecimento.nomeFantasia ?? acao.estabelecimento.razaoSocial }
+      : { modo: "avulso", nome: acao.estabelecimentoAvulso ?? "Não informado" },
+    profissionais: acao.profissionais.map((p) =>
+      p.degustadora
+        ? { id: p.degustadora.id, nome: p.degustadora.nome, modo: "cadastrada" as const }
+        : { id: p.id, nome: p.nomeAvulso ?? "Avulsa", modo: "avulsa" as const }
+    ),
+    produtos: acao.produtos.map((p) => ({
+      id: p.produto.id,
+      nome: p.produto.nome,
+      quantidadePlanejada: Number(p.quantidadePlanejada),
+    })),
+  }));
+}

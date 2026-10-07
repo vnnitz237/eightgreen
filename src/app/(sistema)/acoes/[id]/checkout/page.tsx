@@ -7,8 +7,10 @@ import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { CheckoutForm } from "@/componentes/acoes/CheckoutForm";
 import { prisma } from "@/lib/prisma";
 import { formatarDataCurta } from "@/lib/formatadores";
+import { exigirPermissaoPagina } from "@/lib/autorizacao";
 
 export default async function CheckoutAcaoPage({ params }: { params: Promise<{ id: string }> }) {
+  await exigirPermissaoPagina("MUTAR_ACOES");
   const { id } = await params;
 
   const acao = await prisma.acao.findUnique({

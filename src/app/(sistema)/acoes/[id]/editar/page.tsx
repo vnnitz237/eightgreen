@@ -5,8 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { FormAcao } from "@/funcionalidades/acoes/form-acao";
 import { editarAcao } from "@/funcionalidades/acoes/actions";
 import { listarDistribuidoras, listarEstabelecimentos, listarProdutos, listarDegustadoras } from "@/funcionalidades/cadastros/consultas";
+import { exigirPermissaoPagina } from "@/lib/autorizacao";
 
 export default async function EditarAcaoPage({ params }: { params: Promise<{ id: string }> }) {
+  await exigirPermissaoPagina("MUTAR_ACOES");
   const { id } = await params;
 
   const [acao, distribuidoras, estabelecimentos, produtos, degustadoras] = await Promise.all([

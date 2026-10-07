@@ -3,9 +3,11 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import { FormAcao } from "@/funcionalidades/acoes/form-acao";
 import { criarAcao } from "@/funcionalidades/acoes/actions";
+import { exigirPermissaoPagina } from "@/lib/autorizacao";
 import { listarDistribuidoras, listarEstabelecimentos, listarProdutos, listarDegustadoras } from "@/funcionalidades/cadastros/consultas";
 
 export default async function NovaAcaoPage() {
+  await exigirPermissaoPagina("MUTAR_ACOES");
   const [distribuidoras, estabelecimentos, produtos, degustadoras] = await Promise.all([
     listarDistribuidoras(),
     listarEstabelecimentos(),

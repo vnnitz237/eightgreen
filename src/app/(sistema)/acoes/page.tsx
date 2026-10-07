@@ -9,6 +9,7 @@ import { listarAcoesComFiltros } from "@/funcionalidades/acoes/consultas-lista";
 import { listarDistribuidoras, listarEstabelecimentos } from "@/funcionalidades/cadastros/consultas";
 import { clonarAcao, cancelarAcao } from "@/funcionalidades/acoes/actions";
 import type { StatusAcao } from "@/funcionalidades/acoes/tipos";
+import { exigirUsuario } from "@/lib/autorizacao";
 
 type SearchParams = Promise<{
   busca?: string;
@@ -23,6 +24,8 @@ type SearchParams = Promise<{
 export default async function AcoesPage({ searchParams }: { searchParams: SearchParams }) {
   const sp = await searchParams;
   const pagina = Number(sp.pagina ?? 1);
+  const usuario = await exigirUsuario();
+  const ehAdmin = usuario.papel === "ADMINISTRADOR";
 
   const [{ acoes, total, paginas }, distribuidoras, estabelecimentos] = await Promise.all([
     listarAcoesComFiltros({
@@ -33,9 +36,10 @@ export default async function AcoesPage({ searchParams }: { searchParams: Search
       distribuidoraId: sp.distribuidoraId,
       estabelecimentoId: sp.estabelecimentoId,
       pagina,
+      degustadoraId: ehAdmin ? undefined : (usuario.degustadoraId ?? "nenhuma"),
     }),
-    listarDistribuidoras(),
-    listarEstabelecimentos(),
+    ehAdmin ? listarDistribuidoras() : Promise.resolve([]),
+    ehAdmin ? listarEstabelecimentos() : Promise.resolve([]),
   ]);
 
   const inicio = (pagina - 1) * 20 + 1;
@@ -46,16 +50,16 @@ export default async function AcoesPage({ searchParams }: { searchParams: Search
       <CabecalhoPagina
         etiqueta="Operação"
         titulo="Ações promocionais"
-        descricao={`${total} ação${total !== 1 ? "ões" : ""} cadastrada${total !== 1 ? "s" : ""}`}
-        acao={
+        descricao={ehAdmin ? `${total} ação${total !== 1 ? "ões" : ""} cadastrada${total !== 1 ? "s" : ""}` : "Suas ações agendadas"}
+        acao={ehAdmin ? (
           <Link href="/acoes/nova" className="botao" style={{ display: "flex", alignItems: "center", gap: 7 }}>
             <Plus size={15} /> Nova ação
           </Link>
-        }
+        ) : undefined}
       />
 
-      {/* Filtros */}
-      <div className="painel" style={{ marginBottom: 18 }}>
+      {/* Filtros — visíveis apenas para administradores */}
+      {ehAdmin && <div className="painel" style={{ marginBottom: 18 }}>
         <div className="painel-cabecalho"><div><h2>Filtros</h2></div></div>
         <form method="GET" className="form-completo" style={{ padding: "14px 19px" }}>
           <div className="form-completo-grupo">
@@ -109,7 +113,7 @@ export default async function AcoesPage({ searchParams }: { searchParams: Search
             <Link href="/acoes" className="bt-secundario">Limpar</Link>
           </div>
         </form>
-      </div>
+      </div>}
 
       {/* Tabela */}
       <div className="painel">
@@ -165,20 +169,22 @@ export default async function AcoesPage({ searchParams }: { searchParams: Search
                       <td>
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
                           <Link href={`/acoes/${acao.id}`} className="bt-link" style={{ fontSize: 11 }}>Ver</Link>
-                          {acao.status === "aberta" && (
+                          {ehAdmin && acao.status === "aberta" && (
                             <Link href={`/acoes/${acao.id}/editar`} className="bt-link" style={{ fontSize: 11 }}>Editar</Link>
                           )}
-                          <form action={clonar} style={{ display: "contents" }}>
-                            <button
-                              type="submit"
-                              className="bt-link"
-                              style={{ fontSize: 11 }}
-                              onClick={(e) => { if (!confirm("Clonar esta ação?")) e.preventDefault(); }}
-                            >
-                              Clonar
-                            </button>
-                          </form>
-                          {acao.status === "aberta" && (
+                          {ehAdmin && (
+                            <form action={clonar} style={{ display: "contents" }}>
+                              <button
+                                type="submit"
+                                className="bt-link"
+                                style={{ fontSize: 11 }}
+                                onClick={(e) => { if (!confirm("Clonar esta ação?")) e.preventDefault(); }}
+                              >
+                                Clonar
+                              </button>
+                            </form>
+                          )}
+                          {ehAdmin && acao.status === "aberta" && (
                             <form action={cancelar} style={{ display: "contents" }}>
                               <button
                                 type="submit"

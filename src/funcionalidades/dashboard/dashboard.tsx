@@ -10,9 +10,9 @@ import { formatarDataCurta, formatarInteiro } from "@/lib/formatadores";
 import { Status } from "@/componentes/ui/status";
 import type { AlertasFinanceiros, ItemSaldoEstoque } from "./consultas";
 
-type Props = { acoes: AcaoPromocional[]; saldoEstoque: ItemSaldoEstoque[]; alertas: AlertasFinanceiros };
+type Props = { acoes: AcaoPromocional[]; saldoEstoque: ItemSaldoEstoque[]; alertas: AlertasFinanceiros; modoFuncionario?: boolean };
 
-export function Dashboard({ acoes: acoesIniciais, saldoEstoque, alertas }: Props) {
+export function Dashboard({ acoes: acoesIniciais, saldoEstoque, alertas, modoFuncionario = false }: Props) {
   const referencia = new Date().toISOString().slice(0, 10);
   const periodoInicial = { inicio: `${referencia.slice(0, 8)}01`, fim: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10) };
   const [rascunho, setRascunho] = useState(periodoInicial);
@@ -38,6 +38,8 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque, alertas }: Props
     if (!resultado.success) { setErro("Revise o período informado."); return; }
     setErro(""); setPeriodo(resultado.data);
   }
+
+  if (modoFuncionario) return <DashboardFuncionario acoes={acoesIniciais} referencia={referencia} />;
 
   return <div className="dashboard-novo">
     <section className="boas-vindas">
@@ -146,4 +148,59 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque, alertas }: Props
 
 function CabecalhoCard({ titulo, subtitulo, href }: { titulo: string; subtitulo: string; href: string }) {
   return <div className="card-topo"><div><h2>{titulo}</h2><p>{subtitulo}</p></div><Link href={href} aria-label={`Abrir ${titulo}`}><ArrowUpRight size={17}/></Link></div>;
+}
+
+function DashboardFuncionario({ acoes, referencia }: { acoes: AcaoPromocional[]; referencia: string }) {
+  const proximas = acoes.filter((a) => a.status === "aberta" && a.data >= referencia);
+  const historico = acoes.filter((a) => a.status !== "aberta" || a.data < referencia);
+  return (
+    <div className="dashboard-novo">
+      <section className="boas-vindas">
+        <div className="boas-vindas-topo">
+          <div><span>Minhas ações</span><h1>Olá, <em>Equipe Eight Green</em></h1><p>Acompanhe suas ações agendadas e encerradas.</p></div>
+        </div>
+      </section>
+      <section className="kpis" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }} aria-label="Resumo">
+        <article><div className="kpi-icone azul"><Activity/></div><div><span>Total atribuídas</span><strong>{acoes.length}</strong><small>Todas as ações</small></div></article>
+        <article><div className="kpi-icone amarelo"><CalendarClock/></div><div><span>Próximas</span><strong>{proximas.length}</strong><small>Abertas a partir de hoje</small></div></article>
+        <article><div className="kpi-icone verde"><CheckCircle2/></div><div><span>Encerradas</span><strong>{acoes.filter((a) => a.status === "encerrada").length}</strong><small>Já realizadas</small></div></article>
+      </section>
+      <section className="grid-referencia">
+        <article className="card-ref tabela-proximas" style={{ gridColumn: "1/-1" }}>
+          <div className="card-topo"><div><h2>Próximas ações</h2><p>Abertas a partir de hoje</p></div><Link href="/acoes" aria-label="Ver todas"><ArrowUpRight size={17}/></Link></div>
+          {proximas.length === 0 ? (
+            <div className="estado-vazio"><strong>Nenhuma ação futura</strong><span>Você não tem ações abertas agendadas.</span></div>
+          ) : (
+            <div className="tabela-ref-wrap"><table><thead><tr><th>Ação</th><th>Data</th><th>Local</th><th>Status</th><th/></tr></thead><tbody>
+              {proximas.map((acao) => (
+                <tr key={acao.id}>
+                  <td><strong>{acao.titulo}</strong></td>
+                  <td><strong>{formatarDataCurta(acao.data)}</strong><small>{acao.horario}</small></td>
+                  <td>{acao.estabelecimento.modo === "cadastrado" ? acao.estabelecimento.nome : acao.estabelecimento.nome}</td>
+                  <td><Status valor={acao.status}/></td>
+                  <td><Link href={`/acoes/${acao.id}`} aria-label={`Abrir ${acao.titulo}`}><ArrowUpRight size={16}/></Link></td>
+                </tr>
+              ))}
+            </tbody></table></div>
+          )}
+        </article>
+        {historico.length > 0 && (
+          <article className="card-ref tabela-proximas" style={{ gridColumn: "1/-1" }}>
+            <div className="card-topo"><div><h2>Histórico</h2><p>Ações encerradas ou passadas</p></div></div>
+            <div className="tabela-ref-wrap"><table><thead><tr><th>Ação</th><th>Data</th><th>Local</th><th>Status</th><th/></tr></thead><tbody>
+              {historico.slice(0, 10).map((acao) => (
+                <tr key={acao.id}>
+                  <td><strong>{acao.titulo}</strong></td>
+                  <td><strong>{formatarDataCurta(acao.data)}</strong><small>{acao.horario}</small></td>
+                  <td>{acao.estabelecimento.modo === "cadastrado" ? acao.estabelecimento.nome : acao.estabelecimento.nome}</td>
+                  <td><Status valor={acao.status}/></td>
+                  <td><Link href={`/acoes/${acao.id}`} aria-label={`Abrir ${acao.titulo}`}><ArrowUpRight size={16}/></Link></td>
+                </tr>
+              ))}
+            </tbody></table></div>
+          </article>
+        )}
+      </section>
+    </div>
+  );
 }

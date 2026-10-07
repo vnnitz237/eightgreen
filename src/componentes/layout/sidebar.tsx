@@ -9,8 +9,8 @@ type Papel = "ADMINISTRADOR" | "FUNCIONARIO";
 const destinosPrincipais = [
   { rotulo: "Visão geral", href: "/", icone: Gauge, somente: null },
   { rotulo: "Ações", href: "/acoes", icone: CalendarDays, somente: null },
-  { rotulo: "Agenda", href: "/agenda", icone: CalendarClock, somente: null },
-  { rotulo: "Estoque", href: "/estoque/saldo", icone: Boxes, somente: null },
+  { rotulo: "Agenda", href: "/agenda", icone: CalendarClock, somente: "ADMINISTRADOR" as Papel },
+  { rotulo: "Estoque", href: "/estoque/saldo", icone: Boxes, somente: "ADMINISTRADOR" as Papel },
   { rotulo: "Financeiro", href: "/financeiro/conta-corrente", icone: CircleDollarSign, somente: "ADMINISTRADOR" as Papel },
 ] as const;
 
@@ -29,7 +29,9 @@ export function Sidebar({ aberta, fechar, papel }: { aberta: boolean; fechar: ()
           })}
       </nav>
       <nav className="trilho-grupo trilho-inferior">
-        <Link href="/pessoal/agenda" aria-label="Equipe e agenda" data-tooltip="Equipe e agenda" onClick={fechar}><UsersRound size={20}/></Link>
+        {papel === "ADMINISTRADOR" && (
+          <Link href="/pessoal/agenda" aria-label="Equipe e agenda" data-tooltip="Equipe e agenda" onClick={fechar}><UsersRound size={20}/></Link>
+        )}
         {papel === "ADMINISTRADOR" && (
           <Link href="/configuracoes/usuarios" aria-label="Gerenciar usuários" data-tooltip="Gerenciar usuários" onClick={fechar}><ShieldCheck size={20}/></Link>
         )}

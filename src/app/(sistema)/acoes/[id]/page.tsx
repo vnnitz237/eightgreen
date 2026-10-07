@@ -10,9 +10,12 @@ import { cancelarAcao, clonarAcao } from "@/funcionalidades/acoes/actions";
 import { prisma } from "@/lib/prisma";
 import { formatData } from "@/lib/format";
 import type { StatusAcao } from "@/funcionalidades/acoes/tipos";
+import { exigirUsuario } from "@/lib/autorizacao";
 
 export default async function DetalheAcaoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const usuario = await exigirUsuario();
+  const ehAdmin = usuario.papel === "ADMINISTRADOR";
 
   const [acao, historico] = await Promise.all([
     prisma.acao.findUnique({
@@ -33,6 +36,11 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
   ]);
 
   if (!acao) notFound();
+
+  if (!ehAdmin) {
+    const atribuida = acao.acaoDegustadoras.some((ad) => ad.degustadoraId === usuario.degustadoraId);
+    if (!atribuida) notFound();
+  }
 
   const nomeEstab = acao.estabelecimentoId && acao.estabelecimento
     ? acao.estabelecimento.nomeFantasia ?? acao.estabelecimento.razaoSocial
@@ -61,7 +69,7 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
         acao={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <Status valor={acao.status as StatusAcao} />
-            {acao.status === "aberta" && (
+            {ehAdmin && acao.status === "aberta" && (
               <>
                 <Link href={`/acoes/${acao.id}/editar`} className="bt-secundario" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <Edit3 size={14} /> Editar
