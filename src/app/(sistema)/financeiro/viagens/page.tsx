@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
-import { listarDespesasViagem, criarDespesaViagem } from "@/lib/actions/financeiro";
+import { listarDespesasViagem, criarDespesaViagem, aprovarDespesaViagem } from "@/lib/actions/financeiro";
 import { prisma } from "@/lib/prisma";
 import { formatarDataCurta, formatarMoeda } from "@/lib/formatadores";
 
@@ -25,6 +25,12 @@ export default async function ViagensPage({ searchParams }: { searchParams: Sear
   async function criar(formData: FormData) {
     "use server";
     await criarDespesaViagem(formData);
+  }
+
+  async function aprovar(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    await aprovarDespesaViagem(id);
   }
 
   return (
@@ -73,7 +79,9 @@ export default async function ViagensPage({ searchParams }: { searchParams: Sear
                   <th>Destino</th>
                   <th>Tipo</th>
                   <th>Colaborador</th>
+                  <th>Status</th>
                   <th style={{ textAlign: "right" }}>Valor</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -84,14 +92,38 @@ export default async function ViagensPage({ searchParams }: { searchParams: Sear
                     <td>{d.destino ?? <span style={{ color: "var(--cor-texto-3)" }}>—</span>}</td>
                     <td>{d.tipoDespesa ?? <span style={{ color: "var(--cor-texto-3)" }}>—</span>}</td>
                     <td>{d.colaborador?.name ?? <span style={{ color: "var(--cor-texto-3)" }}>—</span>}</td>
+                    <td>
+                      <span style={{
+                        display: "inline-block",
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background: d.status === "APROVADA" ? "var(--cor-sucesso-fundo, #dcfce7)" : "var(--cor-alerta-fundo, #fef9c3)",
+                        color: d.status === "APROVADA" ? "var(--cor-sucesso, #166534)" : "var(--cor-alerta, #854d0e)",
+                      }}>
+                        {d.status === "APROVADA" ? "Aprovada" : d.status === "REJEITADA" ? "Rejeitada" : "Pendente"}
+                      </span>
+                    </td>
                     <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{formatarMoeda(Number(d.valor))}</td>
+                    <td>
+                      {d.status !== "APROVADA" && (
+                        <form action={aprovar}>
+                          <input type="hidden" name="id" value={d.id} />
+                          <button type="submit" className="botao" style={{ fontSize: 11, padding: "3px 10px", whiteSpace: "nowrap" }}>
+                            Aprovar e gerar CP
+                          </button>
+                        </form>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={5} style={{ textAlign: "right", fontWeight: 700 }}>Total</td>
+                  <td colSpan={6} style={{ textAlign: "right", fontWeight: 700 }}>Total</td>
                   <td style={{ textAlign: "right", fontWeight: 700 }}>{formatarMoeda(totalValor)}</td>
+                  <td></td>
                 </tr>
               </tfoot>
             </table>

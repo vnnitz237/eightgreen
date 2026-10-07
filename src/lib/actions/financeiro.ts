@@ -358,6 +358,39 @@ export async function criarDespesaViagem(formData: FormData): Promise<{ ok: true
   }
 }
 
+export async function aprovarDespesaViagem(id: string): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    await exigirPermissao("MUTAR_FINANCEIRO");
+    const despesa = await prisma.despesaViagem.findUniqueOrThrow({ where: { id } });
+    if (despesa.status === "APROVADA") return { ok: false, erro: "Despesa já aprovada." };
+
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const vencimento = new Date(hoje.getTime() + 15 * 24 * 60 * 60 * 1000);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.despesaViagem.update({ where: { id }, data: { status: "APROVADA" } });
+
+      await tx.contaPagar.create({
+        data: {
+          descricao: `Reembolso de viagem: ${despesa.descricao}`,
+          valor: despesa.valor,
+          emissao: hoje,
+          vencimento,
+          favorecido: despesa.destino ?? null,
+        },
+      });
+    });
+
+    revalidatePath("/financeiro/viagens");
+    revalidatePath("/financeiro/contas-pagar");
+    revalidatePath("/financeiro/titulos");
+    return { ok: true };
+  } catch (e: unknown) {
+    return { ok: false, erro: String(e) };
+  }
+}
+
 export async function listarDespesasViagem(params: { busca?: string; pagina?: number }) {
   const { busca, pagina = 1 } = params;
   const take = 20;

@@ -281,7 +281,70 @@ export async function cancelarAcao(id: string) {
 }
 
 export async function atualizarStatusAcao(id: string, status: "aberta" | "encerrada" | "cancelada") {
+  const acao = await prisma.acao.findUniqueOrThrow({
+    where: { id },
+    include: { produtos: true },
+  });
+
   await prisma.acao.update({ where: { id }, data: { status } });
+
+  // Automação: ao encerrar, baixar estoque e gerar Conta a Receber
+  if (status === "encerrada" && acao.status !== "encerrada" && acao.produtos.length > 0) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    await prisma.$transaction(async (tx) => {
+      const doc = await tx.documentoEstoque.create({
+        data: {
+          tipo: "SAIDA",
+          data: hoje,
+          acaoId: id,
+          observacao: `Baixa automática — Ação encerrada: ${acao.titulo}`,
+        },
+      });
+
+      for (const p of acao.produtos) {
+        await tx.documentoEstoqueItem.create({
+          data: {
+            documentoId: doc.id,
+            produtoId: p.produtoId,
+            quantidade: p.quantidadePlanejada,
+          },
+        });
+
+        await tx.saldoEstoque.upsert({
+          where: { produtoId: p.produtoId },
+          create: { produtoId: p.produtoId, quantidade: -p.quantidadePlanejada },
+          update: { quantidade: { decrement: p.quantidadePlanejada } },
+        });
+      }
+
+      const totalValor = acao.produtos.reduce(
+        (soma, p) => soma + p.quantidadePlanejada * Number(p.preco),
+        0
+      );
+
+      const vencimento = new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      await tx.contaReceber.create({
+        data: {
+          descricao: totalValor > 0
+            ? `Ação encerrada: ${acao.titulo}`
+            : `Ação encerrada: ${acao.titulo} — valor a preencher`,
+          valor: totalValor > 0 ? totalValor : 0.01,
+          emissao: hoje,
+          vencimento,
+          estabelecimentoId: acao.estabelecimentoId,
+          acaoId: id,
+        },
+      });
+    });
+
+    revalidatePath("/estoque/saldo");
+    revalidatePath("/financeiro/contas-receber");
+    revalidatePath("/financeiro/titulos");
+  }
+
   revalidatePath("/acoes");
   revalidatePath(`/acoes/${id}`);
   revalidatePath("/");
