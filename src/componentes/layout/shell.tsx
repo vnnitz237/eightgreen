@@ -10,7 +10,7 @@ export function Shell({ children, usuario }: { children: React.ReactNode; usuari
   const [menuAberto, setMenuAberto] = useState(false);
   return <div className="app-shell">
     <Cabecalho abrirMenu={() => setMenuAberto(true)} usuario={usuario}/>
-    <Sidebar aberta={menuAberto} fechar={() => setMenuAberto(false)}/>
+    <Sidebar aberta={menuAberto} fechar={() => setMenuAberto(false)} papel={usuario.papel}/>
     <div className="area-principal"><main>{children}</main></div>
   </div>;
 }

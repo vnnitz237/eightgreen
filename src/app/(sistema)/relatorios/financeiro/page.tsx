@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 
+import { exigirPermissaoPagina } from '@/lib/autorizacao'
 import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import { formatData, formatMoeda } from '@/lib/format'
@@ -13,6 +14,7 @@ type SearchParams = Promise<{
 }>
 
 export default async function RelatorioFinanceiroPage({ searchParams }: { searchParams: SearchParams }) {
+  await exigirPermissaoPagina('MUTAR_FINANCEIRO')
   const { inicio, fim } = await searchParams
 
   const dataFiltro = inicio && fim

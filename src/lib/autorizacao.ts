@@ -24,6 +24,13 @@ export async function exigirPermissao(operacao: Operacao) {
   return usuario;
 }
 
+// Para uso em Server Components e layouts — redireciona em vez de lançar exceção.
+export async function exigirPermissaoPagina(operacao: Operacao) {
+  const usuario = await exigirUsuario();
+  if (!papelPode(usuario.papel, operacao)) redirect("/sem-permissao");
+  return usuario;
+}
+
 export async function exigirAdministrador() {
-  return exigirPermissao("ADMINISTRAR_USUARIOS");
+  return exigirPermissaoPagina("ADMINISTRAR_USUARIOS");
 }
