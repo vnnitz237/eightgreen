@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { criarMerchan } from "@/lib/actions/merchan";
 import { prisma } from "@/lib/prisma";
+import { UploadFotos } from "@/componentes/merchan/UploadFotos";
 
 export default async function NovoMerchanPage() {
   const [estabelecimentos, promotores] = await Promise.all([
@@ -65,6 +66,12 @@ export default async function NovoMerchanPage() {
             <label style={{ gridColumn: "1/-1" }}>
               Observações
               <textarea name="observacoes" rows={3} placeholder="Observações da visita…" />
+            </label>
+          </div>
+          <div className="form-completo-grupo">
+            <label style={{ gridColumn: "1/-1" }}>
+              Fotos
+              <UploadFotos />
             </label>
           </div>
           <div style={{ display: "flex", gap: 8 }}>

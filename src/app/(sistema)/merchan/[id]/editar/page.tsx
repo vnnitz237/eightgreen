@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { obterMerchan, editarMerchan } from "@/lib/actions/merchan";
 import { prisma } from "@/lib/prisma";
+import { UploadFotos } from "@/componentes/merchan/UploadFotos";
 
 type Params = Promise<{ id: string }>;
 
@@ -71,6 +72,12 @@ export default async function EditarMerchanPage({ params }: { params: Params }) 
             <label style={{ gridColumn: "1/-1" }}>
               Observações
               <textarea name="observacoes" rows={3} defaultValue={visita.observacoes ?? ""} placeholder="Observações da visita…" />
+            </label>
+          </div>
+          <div className="form-completo-grupo">
+            <label style={{ gridColumn: "1/-1" }}>
+              Fotos
+              <UploadFotos fotosIniciais={visita.fotos} />
             </label>
           </div>
           <div style={{ display: "flex", gap: 8 }}>

@@ -74,6 +74,7 @@ export async function criarMerchan(formData: FormData) {
   if (!parse.success) return { ok: false, erro: parse.error.issues[0]?.message ?? "Dados inválidos" };
 
   const d = parse.data;
+  const fotos = formData.getAll("fotos").filter((v) => typeof v === "string" && v.startsWith("http")) as string[];
   const visita = await prisma.merchan.create({
     data: {
       data: new Date(d.data),
@@ -87,6 +88,7 @@ export async function criarMerchan(formData: FormData) {
       lngSaida: d.lngSaida ?? null,
       checklistOk: d.checklistOk,
       observacoes: orNull(d.observacoes),
+      fotos,
     },
   });
 
@@ -101,6 +103,7 @@ export async function editarMerchan(id: string, formData: FormData) {
   if (!parse.success) return { ok: false, erro: parse.error.issues[0]?.message ?? "Dados inválidos" };
 
   const d = parse.data;
+  const fotos = formData.getAll("fotos").filter((v) => typeof v === "string" && v.startsWith("http")) as string[];
   await prisma.merchan.update({
     where: { id },
     data: {
@@ -115,6 +118,7 @@ export async function editarMerchan(id: string, formData: FormData) {
       lngSaida: d.lngSaida ?? null,
       checklistOk: d.checklistOk,
       observacoes: orNull(d.observacoes),
+      fotos,
     },
   });
 

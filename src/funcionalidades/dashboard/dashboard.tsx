@@ -2,17 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Activity, ArrowUpRight, CalendarClock, CalendarDays, CheckCircle2, ChevronRight, Plus, UsersRound, XCircle } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, CalendarClock, CalendarDays, CheckCircle2, ChevronRight, Plus, TrendingDown, UsersRound, XCircle } from "lucide-react";
 import type { AcaoPromocional } from "@/funcionalidades/acoes/tipos";
 import { filtrarAcoesPorPeriodo, resumirAcoes } from "@/funcionalidades/acoes/consultas";
 import { periodoSchema } from "@/funcionalidades/acoes/schemas";
 import { formatarDataCurta, formatarInteiro } from "@/lib/formatadores";
 import { Status } from "@/componentes/ui/status";
-import type { ItemSaldoEstoque } from "./consultas";
+import type { AlertasFinanceiros, ItemSaldoEstoque } from "./consultas";
 
-type Props = { acoes: AcaoPromocional[]; saldoEstoque: ItemSaldoEstoque[] };
+type Props = { acoes: AcaoPromocional[]; saldoEstoque: ItemSaldoEstoque[]; alertas: AlertasFinanceiros };
 
-export function Dashboard({ acoes: acoesIniciais, saldoEstoque }: Props) {
+export function Dashboard({ acoes: acoesIniciais, saldoEstoque, alertas }: Props) {
   const referencia = new Date().toISOString().slice(0, 10);
   const periodoInicial = { inicio: `${referencia.slice(0, 8)}01`, fim: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10) };
   const [rascunho, setRascunho] = useState(periodoInicial);
@@ -60,6 +60,41 @@ export function Dashboard({ acoes: acoesIniciais, saldoEstoque }: Props) {
       <article><div className="kpi-icone verde"><CheckCircle2/></div><div><span>Ações encerradas</span><strong>{encerradasGlobal}</strong><small>{totalGlobal ? Math.round(encerradasGlobal / totalGlobal * 100) : 0}% do total</small></div></article>
       <article><div className="kpi-icone vermelho"><XCircle/></div><div><span>Ações canceladas</span><strong>{canceladasGlobal}</strong><small>{totalGlobal ? Math.round(canceladasGlobal / totalGlobal * 100) : 0}% do total</small></div></article>
     </section>
+
+    {(alertas.cpVencidas > 0 || alertas.crVencidas > 0 || alertas.saldoNegativo > 0) && (
+      <section className="kpis" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }} aria-label="Alertas financeiros">
+        <Link href="/financeiro/contas-pagar" style={{ textDecoration: "none" }}>
+          <article style={{ cursor: "pointer" }}>
+            <div className={`kpi-icone ${alertas.cpVencidas > 0 ? "vermelho" : "verde"}`}><AlertTriangle/></div>
+            <div>
+              <span>CP vencidas</span>
+              <strong>{alertas.cpVencidas}</strong>
+              <small>{alertas.cpVencidas > 0 ? "Requer atenção" : "Em dia"}</small>
+            </div>
+          </article>
+        </Link>
+        <Link href="/financeiro/contas-receber" style={{ textDecoration: "none" }}>
+          <article style={{ cursor: "pointer" }}>
+            <div className={`kpi-icone ${alertas.crVencidas > 0 ? "amarelo" : "verde"}`}><AlertTriangle/></div>
+            <div>
+              <span>CR vencidas</span>
+              <strong>{alertas.crVencidas}</strong>
+              <small>{alertas.crVencidas > 0 ? "Requer atenção" : "Em dia"}</small>
+            </div>
+          </article>
+        </Link>
+        <Link href="/estoque/saldo" style={{ textDecoration: "none" }}>
+          <article style={{ cursor: "pointer" }}>
+            <div className={`kpi-icone ${alertas.saldoNegativo > 0 ? "vermelho" : "verde"}`}><TrendingDown/></div>
+            <div>
+              <span>Saldo negativo</span>
+              <strong>{alertas.saldoNegativo}</strong>
+              <small>{alertas.saldoNegativo > 0 ? "Produto(s) com saldo negativo" : "Estoque OK"}</small>
+            </div>
+          </article>
+        </Link>
+      </section>
+    )}
 
     <section className="grid-referencia">
       <article className="card-ref resumo-acoes">

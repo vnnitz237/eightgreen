@@ -8,9 +8,16 @@ export type ItemSaldoEstoque = {
   minimo: number;
 };
 
+export type AlertasFinanceiros = {
+  cpVencidas: number;
+  crVencidas: number;
+  saldoNegativo: number;
+};
+
 export async function buscarDadosDashboard(): Promise<{
   acoes: AcaoPromocional[];
   saldoEstoque: ItemSaldoEstoque[];
+  alertas: AlertasFinanceiros;
 }> {
   // O PostgreSQL embarcado usado no desenvolvimento local não aceita duas
   // instruções preparadas simultâneas na mesma conexão. As consultas são
@@ -60,5 +67,18 @@ export async function buscarDadosDashboard(): Promise<{
     return { id: produto.id, produto: produto.nome, quantidade, minimo: Number(produto.estoqueMinimo) };
   });
 
-  return { acoes, saldoEstoque };
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const cpVencidas = await prisma.contaPagar.count({
+    where: { status: "ABERTA", vencimento: { lt: hoje } },
+  });
+  const crVencidas = await prisma.contaReceber.count({
+    where: { status: "ABERTA", vencimento: { lt: hoje } },
+  });
+  const saldoNegativo = await prisma.saldoEstoque.count({
+    where: { quantidade: { lt: 0 } },
+  });
+
+  return { acoes, saldoEstoque, alertas: { cpVencidas, crVencidas, saldoNegativo } };
 }

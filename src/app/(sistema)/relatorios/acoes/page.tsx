@@ -13,12 +13,13 @@ type SearchParams = Promise<{
   fim?: string
   status?: string
   estabelecimento_id?: string
+  degustadora_id?: string
 }>
 
 export default async function RelatorioAcoesPage({ searchParams }: { searchParams: SearchParams }) {
-  const { inicio, fim, status, estabelecimento_id } = await searchParams
+  const { inicio, fim, status, estabelecimento_id, degustadora_id } = await searchParams
 
-  const [acoes, estabelecimentos] = await Promise.all([
+  const [acoes, estabelecimentos, degustadoras] = await Promise.all([
     prisma.acao.findMany({
       where: {
         ...(inicio && fim
@@ -26,6 +27,9 @@ export default async function RelatorioAcoesPage({ searchParams }: { searchParam
           : {}),
         ...(status ? { status: status as StatusAcao } : {}),
         ...(estabelecimento_id ? { estabelecimentoId: estabelecimento_id } : {}),
+        ...(degustadora_id
+          ? { acaoDegustadoras: { some: { degustadoraId: degustadora_id } } }
+          : {}),
       },
       include: {
         estabelecimento: { select: { razaoSocial: true } },
@@ -36,6 +40,11 @@ export default async function RelatorioAcoesPage({ searchParams }: { searchParam
     prisma.estabelecimento.findMany({
       select: { id: true, razaoSocial: true },
       orderBy: { razaoSocial: 'asc' },
+    }),
+    prisma.degustadora.findMany({
+      select: { id: true, nome: true },
+      where: { ativo: true },
+      orderBy: { nome: 'asc' },
     }),
   ])
 
@@ -52,7 +61,7 @@ export default async function RelatorioAcoesPage({ searchParams }: { searchParam
       </div>
 
       <Suspense fallback={<div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-400">Carregando filtros…</div>}>
-        <FiltrosAcoes estabelecimentos={estabelecimentos} />
+        <FiltrosAcoes estabelecimentos={estabelecimentos} degustadoras={degustadoras} />
       </Suspense>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">

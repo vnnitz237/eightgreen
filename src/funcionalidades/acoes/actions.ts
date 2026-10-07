@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { exigirPermissao } from "@/lib/autorizacao";
 
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -280,7 +281,30 @@ export async function cancelarAcao(id: string) {
   revalidatePath("/");
 }
 
+export async function encerrarAcaoCheckout(
+  id: string,
+  produtosAtualizados: { produtoId: string; quantidade: number }[]
+): Promise<{ ok: true } | { ok: false; erro: string }> {
+  try {
+    if (produtosAtualizados.length > 0) {
+      await prisma.$transaction(
+        produtosAtualizados.map((p) =>
+          prisma.acaoProduto.updateMany({
+            where: { acaoId: id, produtoId: p.produtoId },
+            data: { quantidadePlanejada: p.quantidade },
+          })
+        )
+      );
+    }
+    await atualizarStatusAcao(id, "encerrada");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, erro: err instanceof Error ? err.message : "Erro ao encerrar ação." };
+  }
+}
+
 export async function atualizarStatusAcao(id: string, status: "aberta" | "encerrada" | "cancelada") {
+  const usuario = await exigirPermissao("MUTAR_ACOES");
   const acao = await prisma.acao.findUniqueOrThrow({
     where: { id },
     include: { produtos: true },
@@ -344,6 +368,17 @@ export async function atualizarStatusAcao(id: string, status: "aberta" | "encerr
     revalidatePath("/financeiro/contas-receber");
     revalidatePath("/financeiro/titulos");
   }
+
+  await prisma.auditoria.create({
+    data: {
+      operacao: "MUDAR_STATUS",
+      entidade: "Acao",
+      registroId: id,
+      estadoAnterior: { status: acao.status },
+      estadoPosterior: { status },
+      autorId: usuario.id,
+    },
+  });
 
   revalidatePath("/acoes");
   revalidatePath(`/acoes/${id}`);

@@ -2,27 +2,35 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit3, Copy } from "lucide-react";
+import { ArrowLeft, Edit3, Copy, CheckCircle } from "lucide-react";
 import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { Status } from "@/componentes/ui/status";
 import { formatarDataCurta, formatarMoeda } from "@/lib/formatadores";
 import { cancelarAcao, clonarAcao } from "@/funcionalidades/acoes/actions";
 import { prisma } from "@/lib/prisma";
+import { formatData } from "@/lib/format";
 import type { StatusAcao } from "@/funcionalidades/acoes/tipos";
 
 export default async function DetalheAcaoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const acao = await prisma.acao.findUnique({
-    where: { id },
-    include: {
-      distribuidora: true,
-      estabelecimento: true,
-      profissionais: { include: { degustadora: true } },
-      produtos: { include: { produto: true } },
-      acaoDegustadoras: { include: { degustadora: true } },
-    },
-  });
+  const [acao, historico] = await Promise.all([
+    prisma.acao.findUnique({
+      where: { id },
+      include: {
+        distribuidora: true,
+        estabelecimento: true,
+        profissionais: { include: { degustadora: true } },
+        produtos: { include: { produto: true } },
+        acaoDegustadoras: { include: { degustadora: true } },
+      },
+    }),
+    prisma.auditoria.findMany({
+      where: { entidade: "Acao", registroId: id },
+      include: { autor: { select: { name: true } } },
+      orderBy: { criadoEm: "desc" },
+    }),
+  ]);
 
   if (!acao) notFound();
 
@@ -68,6 +76,13 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
                     <Copy size={14} /> Clonar
                   </button>
                 </form>
+                <Link
+                  href={`/acoes/${acao.id}/checkout`}
+                  className="botao"
+                  style={{ display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <CheckCircle size={14} /> Encerrar
+                </Link>
                 <form action={cancelar} style={{ display: "contents" }}>
                   <button
                     type="submit"
@@ -140,6 +155,45 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
           )}
         </div>
       </div>
+
+      {/* Histórico de status */}
+      {historico.length > 0 && (
+        <div className="painel" style={{ marginBottom: 18 }}>
+          <div className="painel-cabecalho">
+            <div><h2>Histórico de alterações</h2><p>{historico.length} registro(s)</p></div>
+          </div>
+          <div className="tabela-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data / hora</th>
+                  <th>Operação</th>
+                  <th>De</th>
+                  <th>Para</th>
+                  <th>Responsável</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historico.map((h) => {
+                  const anterior = (h.estadoAnterior as { status?: string } | null)?.status ?? "—";
+                  const posterior = (h.estadoPosterior as { status?: string } | null)?.status ?? "—";
+                  return (
+                    <tr key={h.id}>
+                      <td style={{ fontFamily: "monospace", fontSize: 12 }}>
+                        {formatData(h.criadoEm)}
+                      </td>
+                      <td>{h.operacao}</td>
+                      <td>{anterior}</td>
+                      <td>{posterior}</td>
+                      <td>{h.autor.name}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Produtos */}
       <div className="painel" style={{ marginBottom: 18 }}>

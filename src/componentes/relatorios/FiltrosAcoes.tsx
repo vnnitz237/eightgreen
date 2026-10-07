@@ -8,8 +8,14 @@ interface Estabelecimento {
   razaoSocial: string
 }
 
+interface Degustadora {
+  id: string
+  nome: string
+}
+
 interface FiltrosAcoesProps {
   estabelecimentos: Estabelecimento[]
+  degustadoras: Degustadora[]
 }
 
 // StatusAcao values are lowercase in this project's schema
@@ -20,7 +26,7 @@ const STATUS_OPCOES = [
   { value: 'cancelada', label: 'Cancelada' },
 ]
 
-export default function FiltrosAcoes({ estabelecimentos }: FiltrosAcoesProps) {
+export default function FiltrosAcoes({ estabelecimentos, degustadoras }: FiltrosAcoesProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -28,6 +34,7 @@ export default function FiltrosAcoes({ estabelecimentos }: FiltrosAcoesProps) {
   const [fim, setFim] = useState(searchParams.get('fim') ?? '')
   const [status, setStatus] = useState(searchParams.get('status') ?? '')
   const [estabelecimentoId, setEstabelecimentoId] = useState(searchParams.get('estabelecimento_id') ?? '')
+  const [degustadoraId, setDegustadoraId] = useState(searchParams.get('degustadora_id') ?? '')
 
   function aplicar() {
     const params = new URLSearchParams()
@@ -35,11 +42,12 @@ export default function FiltrosAcoes({ estabelecimentos }: FiltrosAcoesProps) {
     if (fim) params.set('fim', fim)
     if (status) params.set('status', status)
     if (estabelecimentoId) params.set('estabelecimento_id', estabelecimentoId)
+    if (degustadoraId) params.set('degustadora_id', degustadoraId)
     router.push(`/relatorios/acoes?${params.toString()}`)
   }
 
   function limpar() {
-    setInicio(''); setFim(''); setStatus(''); setEstabelecimentoId('')
+    setInicio(''); setFim(''); setStatus(''); setEstabelecimentoId(''); setDegustadoraId('')
     router.push('/relatorios/acoes')
   }
 
@@ -68,6 +76,14 @@ export default function FiltrosAcoes({ estabelecimentos }: FiltrosAcoesProps) {
           className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none min-w-[200px]">
           <option value="">Todos</option>
           {estabelecimentos.map(e => <option key={e.id} value={e.id}>{e.razaoSocial}</option>)}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-gray-600">Degustadora</label>
+        <select value={degustadoraId} onChange={e => setDegustadoraId(e.target.value)}
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none min-w-[180px]">
+          <option value="">Todas</option>
+          {degustadoras.map(d => <option key={d.id} value={d.id}>{d.nome}</option>)}
         </select>
       </div>
       <div className="flex gap-2">
