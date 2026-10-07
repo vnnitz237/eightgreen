@@ -9,7 +9,7 @@ export const gruposNavegacao = [
   { titulo: "Gestão", itens: [
     { rotulo: "Cadastros", href: "/cadastros/clientes", icone: ContactRound },
     { rotulo: "Estoque", href: "/estoque", icone: Boxes },
-    { rotulo: "Financeiro", href: "/financeiro/conta-corrente", icone: CircleDollarSign },
+    { rotulo: "Financeiro", href: "/financeiro", icone: CircleDollarSign },
   ]},
   { titulo: "Equipe", itens: [
     { rotulo: "Agenda", href: "/pessoal/agenda", icone: UsersRound },

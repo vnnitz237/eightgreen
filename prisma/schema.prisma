@@ -188,6 +188,7 @@ model Usuario {
   registrosMerchan        RegistroMerchan[]
   rotas                   Rota[]
   despesas                DespesaEmpresarial[]
+  despesasViagem          DespesaViagem[]
 
   @@map("usuarios")
 }
@@ -279,6 +280,7 @@ model Banco {
   contasPagar   ContaPagar[]
   contasReceber ContaReceber[]
   degustadoras  Degustadora[]
+  lancamentos   LancamentoBanco[]
 
   @@map("bancos")
 }
@@ -334,7 +336,8 @@ model Acao {
   criadoEm          DateTime           @default(now()) @map("criado_em")
   atualizadoEm      DateTime           @updatedAt @map("atualizado_em")
   documentosEstoque DocumentoEstoque[]
-  contasReceber     ContaReceber[]
+  contasReceber     ContaReceber[]     @relation("AcaoContasReceber")
+  contasPagar       ContaPagar[]       @relation("AcaoContasPagar")
 
   @@map("acoes")
 }
@@ -482,12 +485,15 @@ model DespesaOperacional {
 
 model ContaPagar {
   id            String           @id @default(cuid())
+  numero        String?          @unique
   descricao     String
+  categoria     String?
   valor         Decimal          @db.Decimal(12, 2)
   emissao       DateTime         @db.Date
   vencimento    DateTime         @db.Date
   status        StatusContaPagar @default(ABERTA)
   dataPagamento DateTime?        @map("data_pagamento") @db.Date
+  formaPagamento String?         @map("forma_pagamento")
   favorecido    String?
   criadoEm      DateTime         @default(now()) @map("criado_em")
   atualizadoEm  DateTime         @updatedAt @map("atualizado_em")
@@ -502,18 +508,24 @@ model ContaPagar {
   acaoProfissionalId   String?             @map("acao_degustadora_id")
   despesaEmpresarial   DespesaEmpresarial? @relation(fields: [despesaEmpresarialId], references: [id], onDelete: SetNull)
   despesaEmpresarialId String?             @map("despesa_empresarial_id")
+  acao                 Acao?               @relation("AcaoContasPagar", fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId               String?             @map("acao_id")
+  lancamentos          LancamentoBanco[]
 
   @@map("contas_pagar")
 }
 
 model ContaReceber {
   id              String             @id @default(cuid())
+  numero          String?            @unique
   descricao       String
+  categoria       String?
   valor           Decimal            @db.Decimal(12, 2)
   emissao         DateTime           @db.Date
   vencimento      DateTime           @db.Date
   status          StatusContaReceber @default(ABERTA)
   dataRecebimento DateTime?          @map("data_recebimento") @db.Date
+  formaPagamento  String?            @map("forma_pagamento")
   criadoEm        DateTime           @default(now()) @map("criado_em")
   atualizadoEm    DateTime           @updatedAt @map("atualizado_em")
 
@@ -521,9 +533,10 @@ model ContaReceber {
   bancoId           String?          @map("banco_id")
   estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id], onDelete: SetNull)
   estabelecimentoId String?          @map("estabelecimento_id")
-  acao              Acao?            @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acao              Acao?            @relation("AcaoContasReceber", fields: [acaoId], references: [id], onDelete: SetNull)
   acaoId            String?          @map("acao_id")
   lancamentosCC     LancamentoCC[]
+  lancamentosBanco  LancamentoBanco[]
 
   @@map("contas_receber")
 }
@@ -558,6 +571,40 @@ model DespesaItem {
   despesaId String             @map("despesa_id")
 
   @@map("despesas_itens")
+}
+
+model LancamentoBanco {
+  id        String           @id @default(cuid())
+  data      DateTime         @db.Date
+  historico String
+  tipo      TipoLancamentoCC
+  valor     Decimal          @db.Decimal(12, 2)
+  criadoEm  DateTime         @default(now()) @map("criado_em")
+
+  banco          Banco        @relation(fields: [bancoId], references: [id], onDelete: Cascade)
+  bancoId        String       @map("banco_id")
+  contaPagar     ContaPagar?  @relation(fields: [contaPagarId], references: [id], onDelete: SetNull)
+  contaPagarId   String?      @map("conta_pagar_id")
+  contaReceber   ContaReceber? @relation(fields: [contaReceberId], references: [id], onDelete: SetNull)
+  contaReceberId String?       @map("conta_receber_id")
+
+  @@map("lancamentos_banco")
+}
+
+model DespesaViagem {
+  id          String   @id @default(cuid())
+  descricao   String
+  data        DateTime @db.Date
+  destino     String?
+  tipoDespesa String?  @map("tipo_despesa")
+  valor       Decimal  @db.Decimal(12, 2)
+  comprovante String?
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  colaborador   Usuario? @relation(fields: [colaboradorId], references: [id], onDelete: SetNull)
+  colaboradorId String?  @map("colaborador_id")
+
+  @@map("despesas_viagem")
 }
 
 model ContaCorrenteCliente {
