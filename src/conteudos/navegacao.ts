@@ -1,10 +1,10 @@
-import { BarChart3, Boxes, CalendarDays, CircleDollarSign, ClipboardCheck, ContactRound, Gauge, MapPinned, PackageSearch, Settings2, UsersRound } from "lucide-react";
+import { BarChart3, Boxes, CalendarDays, Camera, CircleDollarSign, ContactRound, Gauge, MapPin, PackageSearch, Settings2, UsersRound } from "lucide-react";
 
 export const gruposNavegacao = [
   { titulo: "Operação", itens: [
     { rotulo: "Visão geral", href: "/", icone: Gauge },
     { rotulo: "Ações", href: "/acoes", icone: CalendarDays },
-    { rotulo: "Merchan", href: "/merchan", icone: ClipboardCheck },
+    { rotulo: "Merchan", href: "/merchan", icone: Camera },
   ]},
   { titulo: "Gestão", itens: [
     { rotulo: "Cadastros", href: "/cadastros/clientes", icone: ContactRound },
@@ -13,7 +13,7 @@ export const gruposNavegacao = [
   ]},
   { titulo: "Equipe", itens: [
     { rotulo: "Agenda", href: "/pessoal/agenda", icone: UsersRound },
-    { rotulo: "Rotas", href: "/pessoal/rotas", icone: MapPinned },
+    { rotulo: "Rotas", href: "/rotas", icone: MapPin },
   ]},
   { titulo: "Análise", itens: [
     { rotulo: "Relatórios", href: "/relatorios/acoes", icone: BarChart3 },

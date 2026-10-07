@@ -82,6 +82,13 @@ enum TipoLancamentoCC {
   CREDITO
 }
 
+enum StatusRota {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
 // ─── Cadastros base ──────────────────────────────────────────────────────────
 
 model Distribuidora {
@@ -131,6 +138,8 @@ model Estabelecimento {
   contasCorrentes  ContaCorrenteCliente[]
   rotas            RotaEstabelecimento[]
   compromissos     Compromisso[]
+  merchan          Merchan[]
+  rotaParadas      RotaParada[]
 
   @@map("estabelecimentos")
 }
@@ -189,6 +198,8 @@ model Usuario {
   rotas                   Rota[]
   despesas                DespesaEmpresarial[]
   despesasViagem          DespesaViagem[]
+  merchanPromotor         Merchan[]            @relation("MerchanPromotor")
+  rotasPromotor           Rota[]               @relation("RotaPromotor")
 
   @@map("usuarios")
 }
@@ -671,6 +682,45 @@ model RegistroMerchanProduto {
   @@map("registros_merchan_produtos")
 }
 
+model Merchan {
+  id           String   @id @default(cuid())
+  data         DateTime @db.Date
+  horaEntrada  String?  @map("hora_entrada")
+  horaSaida    String?  @map("hora_saida")
+  latEntrada   Float?   @map("lat_entrada")
+  lngEntrada   Float?   @map("lng_entrada")
+  latSaida     Float?   @map("lat_saida")
+  lngSaida     Float?   @map("lng_saida")
+  fotos        String[]
+  checklistOk  Boolean  @default(false) @map("checklist_ok")
+  observacoes  String?
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id], onDelete: SetNull)
+  estabelecimentoId String?          @map("estabelecimento_id")
+  promotor          Usuario?         @relation("MerchanPromotor", fields: [promotorId], references: [id], onDelete: SetNull)
+  promotorId        String?          @map("promotor_id")
+  rotaParada        RotaParada?
+
+  @@map("merchan_visitas")
+}
+
+model RotaParada {
+  id       String  @id @default(cuid())
+  ordem    Int     @default(0)
+  visitado Boolean @default(false)
+
+  rota              Rota            @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  rotaId            String          @map("rota_id")
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Restrict)
+  estabelecimentoId String          @map("estabelecimento_id")
+  merchan           Merchan?        @relation(fields: [merchanId], references: [id], onDelete: SetNull)
+  merchanId         String?         @unique @map("merchan_id")
+
+  @@map("rota_paradas")
+}
+
 // ─── Pessoal ─────────────────────────────────────────────────────────────────
 
 model Compromisso {
@@ -697,13 +747,20 @@ model Compromisso {
 model Rota {
   id        String   @id @default(cuid())
   descricao String
+  nome      String   @default("")
   data      DateTime @db.Date
   criadoEm  DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
-  ativo            Boolean               @default(true)
-  responsavel      Usuario?              @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
-  responsavelId    String?               @map("responsavel_id")
+  ativo            Boolean    @default(true)
+  status           StatusRota @default(PENDENTE)
+  observacoes      String?
+  responsavel      Usuario?   @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId    String?    @map("responsavel_id")
+  promotor         Usuario?   @relation("RotaPromotor", fields: [promotorId], references: [id], onDelete: SetNull)
+  promotorId       String?    @map("promotor_id")
   estabelecimentos RotaEstabelecimento[]
+  paradas          RotaParada[]
 
   @@map("rotas")
 }
