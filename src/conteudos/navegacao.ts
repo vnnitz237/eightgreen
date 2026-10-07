@@ -1,22 +1,22 @@
-import { BarChart3, Boxes, CalendarDays, CircleDollarSign, ClipboardCheck, ContactRound, Gauge, MapPinned, PackageSearch, Settings2, UsersRound } from "lucide-react";
+import { BarChart2, Boxes, CalendarDays, Camera, CircleDollarSign, ContactRound, Gauge, MapPin, PackageSearch, Settings2, UsersRound } from "lucide-react";
 
 export const gruposNavegacao = [
   { titulo: "Operação", itens: [
     { rotulo: "Visão geral", href: "/", icone: Gauge },
     { rotulo: "Ações", href: "/acoes", icone: CalendarDays },
-    { rotulo: "Merchan", href: "/merchan", icone: ClipboardCheck },
+    { rotulo: "Merchan", href: "/merchan", icone: Camera },
   ]},
   { titulo: "Gestão", itens: [
     { rotulo: "Cadastros", href: "/cadastros/clientes", icone: ContactRound },
-    { rotulo: "Estoque", href: "/estoque/saldo", icone: Boxes },
-    { rotulo: "Financeiro", href: "/financeiro/conta-corrente", icone: CircleDollarSign },
+    { rotulo: "Estoque", href: "/estoque", icone: Boxes },
+    { rotulo: "Financeiro", href: "/financeiro", icone: CircleDollarSign },
   ]},
   { titulo: "Equipe", itens: [
     { rotulo: "Agenda", href: "/pessoal/agenda", icone: UsersRound },
-    { rotulo: "Rotas", href: "/pessoal/rotas", icone: MapPinned },
+    { rotulo: "Rotas", href: "/rotas", icone: MapPin },
   ]},
   { titulo: "Análise", itens: [
-    { rotulo: "Relatórios", href: "/relatorios/acoes", icone: BarChart3 },
+    { rotulo: "Relatórios", href: "/relatorios", icone: BarChart2 },
     { rotulo: "Produtos", href: "/cadastros/produtos", icone: PackageSearch },
     { rotulo: "Configurações", href: "/configuracoes/perfil", icone: Settings2 },
   ]},

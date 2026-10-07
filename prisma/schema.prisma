@@ -82,6 +82,19 @@ enum TipoLancamentoCC {
   CREDITO
 }
 
+enum StatusRota {
+  PENDENTE
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
+enum StatusDespesaViagem {
+  PENDENTE
+  APROVADA
+  REJEITADA
+}
+
 // ─── Cadastros base ──────────────────────────────────────────────────────────
 
 model Distribuidora {
@@ -131,6 +144,8 @@ model Estabelecimento {
   contasCorrentes  ContaCorrenteCliente[]
   rotas            RotaEstabelecimento[]
   compromissos     Compromisso[]
+  merchan          Merchan[]
+  rotaParadas      RotaParada[]
 
   @@map("estabelecimentos")
 }
@@ -179,14 +194,18 @@ model Usuario {
   criadoEm           DateTime      @default(now()) @map("criado_em")
   atualizadoEm       DateTime      @updatedAt @map("atualizado_em")
 
-  degustadora      Degustadora?         @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
-  degustadoraId    String?              @unique @map("degustadora_id")
-  sessoes          Sessao[]
-  auditorias       Auditoria[]
-  compromissosResponsavel Compromisso[] @relation("CompromissoResponsavel")
-  registrosMerchan RegistroMerchan[]
-  rotas            Rota[]
-  despesas         DespesaEmpresarial[]
+  degustadora             Degustadora?         @relation(fields: [degustadoraId], references: [id], onDelete: SetNull)
+  degustadoraId           String?              @unique @map("degustadora_id")
+  sessoes                 Sessao[]
+  auditorias              Auditoria[]
+  compromissosResponsavel Compromisso[]        @relation("CompromissoResponsavel")
+  documentosEstoque       DocumentoEstoque[]   @relation("DocEstoqueResponsavel")
+  registrosMerchan        RegistroMerchan[]
+  rotas                   Rota[]
+  despesas                DespesaEmpresarial[]
+  despesasViagem          DespesaViagem[]
+  merchanPromotor         Merchan[]            @relation("MerchanPromotor")
+  rotasPromotor           Rota[]               @relation("RotaPromotor")
 
   @@map("usuarios")
 }
@@ -278,6 +297,7 @@ model Banco {
   contasPagar   ContaPagar[]
   contasReceber ContaReceber[]
   degustadoras  Degustadora[]
+  lancamentos   LancamentoBanco[]
 
   @@map("bancos")
 }
@@ -301,6 +321,7 @@ model Produto {
   movimentacoes    MovimentacaoEstoque[]
   documentosItem   DocumentoEstoqueItem[]
   registrosMerchan RegistroMerchanProduto[]
+  saldoEstoque     SaldoEstoque?
 
   @@map("produtos")
 }
@@ -312,7 +333,7 @@ model Acao {
   numero      String     @unique @default(cuid()) @map("numero")
   titulo      String
   data        DateTime   @db.Date
-  dataFim     DateTime?  @db.Date  @map("data_fim")
+  dataFim     DateTime?  @db.Date @map("data_fim")
   horario     String
   status      StatusAcao @default(aberta)
   observacoes String?
@@ -324,15 +345,16 @@ model Acao {
   estabelecimentoId     String?          @map("estabelecimento_id")
   estabelecimentoAvulso String?          @map("estabelecimento_avulso")
 
-  profissionais     AcaoProfissional[]
-  produtos          AcaoProduto[]
-  acaoDegustadoras  AcaoDegustadora[]
-  compromissos      Compromisso[]
+  profissionais    AcaoProfissional[]
+  produtos         AcaoProduto[]
+  acaoDegustadoras AcaoDegustadora[]
+  compromissos     Compromisso[]
 
   criadoEm          DateTime           @default(now()) @map("criado_em")
   atualizadoEm      DateTime           @updatedAt @map("atualizado_em")
   documentosEstoque DocumentoEstoque[]
-  contasReceber     ContaReceber[]
+  contasReceber     ContaReceber[]     @relation("AcaoContasReceber")
+  contasPagar       ContaPagar[]       @relation("AcaoContasPagar")
 
   @@map("acoes")
 }
@@ -406,6 +428,7 @@ model MovimentacaoEstoque {
 
 model DocumentoEstoque {
   id           String                 @id @default(cuid())
+  numero       String?                @unique
   tipo         TipoDocumentoEstoque
   status       StatusDocumentoEstoque @default(ABERTO)
   data         DateTime               @db.Date
@@ -415,11 +438,13 @@ model DocumentoEstoque {
   criadoEm     DateTime               @default(now()) @map("criado_em")
   atualizadoEm DateTime               @updatedAt @map("atualizado_em")
 
-  fornecedor   Fornecedor?            @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
-  fornecedorId String?                @map("fornecedor_id")
-  acao         Acao?                  @relation(fields: [acaoId], references: [id], onDelete: SetNull)
-  acaoId       String?                @map("acao_id")
-  itens        DocumentoEstoqueItem[]
+  fornecedor    Fornecedor?            @relation(fields: [fornecedorId], references: [id], onDelete: SetNull)
+  fornecedorId  String?                @map("fornecedor_id")
+  acao          Acao?                  @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId        String?                @map("acao_id")
+  responsavel   Usuario?               @relation("DocEstoqueResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId String?                @map("responsavel_id")
+  itens         DocumentoEstoqueItem[]
 
   @@map("documentos_estoque")
 }
@@ -439,6 +464,16 @@ model DocumentoEstoqueItem {
 
   @@unique([documentoId, produtoId])
   @@map("documentos_estoque_itens")
+}
+
+model SaldoEstoque {
+  id           String   @id @default(cuid())
+  produtoId    String   @unique @map("produto_id")
+  produto      Produto  @relation(fields: [produtoId], references: [id])
+  quantidade   Int      @default(0)
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  @@map("saldos_estoque")
 }
 
 // ─── Financeiro ──────────────────────────────────────────────────────────────
@@ -467,12 +502,15 @@ model DespesaOperacional {
 
 model ContaPagar {
   id            String           @id @default(cuid())
+  numero        String?          @unique
   descricao     String
+  categoria     String?
   valor         Decimal          @db.Decimal(12, 2)
   emissao       DateTime         @db.Date
   vencimento    DateTime         @db.Date
   status        StatusContaPagar @default(ABERTA)
   dataPagamento DateTime?        @map("data_pagamento") @db.Date
+  formaPagamento String?         @map("forma_pagamento")
   favorecido    String?
   criadoEm      DateTime         @default(now()) @map("criado_em")
   atualizadoEm  DateTime         @updatedAt @map("atualizado_em")
@@ -487,18 +525,24 @@ model ContaPagar {
   acaoProfissionalId   String?             @map("acao_degustadora_id")
   despesaEmpresarial   DespesaEmpresarial? @relation(fields: [despesaEmpresarialId], references: [id], onDelete: SetNull)
   despesaEmpresarialId String?             @map("despesa_empresarial_id")
+  acao                 Acao?               @relation("AcaoContasPagar", fields: [acaoId], references: [id], onDelete: SetNull)
+  acaoId               String?             @map("acao_id")
+  lancamentos          LancamentoBanco[]
 
   @@map("contas_pagar")
 }
 
 model ContaReceber {
   id              String             @id @default(cuid())
+  numero          String?            @unique
   descricao       String
+  categoria       String?
   valor           Decimal            @db.Decimal(12, 2)
   emissao         DateTime           @db.Date
   vencimento      DateTime           @db.Date
   status          StatusContaReceber @default(ABERTA)
   dataRecebimento DateTime?          @map("data_recebimento") @db.Date
+  formaPagamento  String?            @map("forma_pagamento")
   criadoEm        DateTime           @default(now()) @map("criado_em")
   atualizadoEm    DateTime           @updatedAt @map("atualizado_em")
 
@@ -506,9 +550,10 @@ model ContaReceber {
   bancoId           String?          @map("banco_id")
   estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id], onDelete: SetNull)
   estabelecimentoId String?          @map("estabelecimento_id")
-  acao              Acao?            @relation(fields: [acaoId], references: [id], onDelete: SetNull)
+  acao              Acao?            @relation("AcaoContasReceber", fields: [acaoId], references: [id], onDelete: SetNull)
   acaoId            String?          @map("acao_id")
   lancamentosCC     LancamentoCC[]
+  lancamentosBanco  LancamentoBanco[]
 
   @@map("contas_receber")
 }
@@ -543,6 +588,41 @@ model DespesaItem {
   despesaId String             @map("despesa_id")
 
   @@map("despesas_itens")
+}
+
+model LancamentoBanco {
+  id        String           @id @default(cuid())
+  data      DateTime         @db.Date
+  historico String
+  tipo      TipoLancamentoCC
+  valor     Decimal          @db.Decimal(12, 2)
+  criadoEm  DateTime         @default(now()) @map("criado_em")
+
+  banco          Banco        @relation(fields: [bancoId], references: [id], onDelete: Cascade)
+  bancoId        String       @map("banco_id")
+  contaPagar     ContaPagar?  @relation(fields: [contaPagarId], references: [id], onDelete: SetNull)
+  contaPagarId   String?      @map("conta_pagar_id")
+  contaReceber   ContaReceber? @relation(fields: [contaReceberId], references: [id], onDelete: SetNull)
+  contaReceberId String?       @map("conta_receber_id")
+
+  @@map("lancamentos_banco")
+}
+
+model DespesaViagem {
+  id          String              @id @default(cuid())
+  descricao   String
+  data        DateTime            @db.Date
+  destino     String?
+  tipoDespesa String?             @map("tipo_despesa")
+  valor       Decimal             @db.Decimal(12, 2)
+  comprovante String?
+  status      StatusDespesaViagem @default(PENDENTE)
+  criadoEm    DateTime            @default(now()) @map("criado_em")
+
+  colaborador   Usuario? @relation(fields: [colaboradorId], references: [id], onDelete: SetNull)
+  colaboradorId String?  @map("colaborador_id")
+
+  @@map("despesas_viagem")
 }
 
 model ContaCorrenteCliente {
@@ -609,18 +689,57 @@ model RegistroMerchanProduto {
   @@map("registros_merchan_produtos")
 }
 
+model Merchan {
+  id           String   @id @default(cuid())
+  data         DateTime @db.Date
+  horaEntrada  String?  @map("hora_entrada")
+  horaSaida    String?  @map("hora_saida")
+  latEntrada   Float?   @map("lat_entrada")
+  lngEntrada   Float?   @map("lng_entrada")
+  latSaida     Float?   @map("lat_saida")
+  lngSaida     Float?   @map("lng_saida")
+  fotos        String[]
+  checklistOk  Boolean  @default(false) @map("checklist_ok")
+  observacoes  String?
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
+
+  estabelecimento   Estabelecimento? @relation(fields: [estabelecimentoId], references: [id], onDelete: SetNull)
+  estabelecimentoId String?          @map("estabelecimento_id")
+  promotor          Usuario?         @relation("MerchanPromotor", fields: [promotorId], references: [id], onDelete: SetNull)
+  promotorId        String?          @map("promotor_id")
+  rotaParada        RotaParada?
+
+  @@map("merchan_visitas")
+}
+
+model RotaParada {
+  id       String  @id @default(cuid())
+  ordem    Int     @default(0)
+  visitado Boolean @default(false)
+
+  rota              Rota            @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  rotaId            String          @map("rota_id")
+  estabelecimento   Estabelecimento @relation(fields: [estabelecimentoId], references: [id], onDelete: Restrict)
+  estabelecimentoId String          @map("estabelecimento_id")
+  merchan           Merchan?        @relation(fields: [merchanId], references: [id], onDelete: SetNull)
+  merchanId         String?         @unique @map("merchan_id")
+
+  @@map("rota_paradas")
+}
+
 // ─── Pessoal ─────────────────────────────────────────────────────────────────
 
 model Compromisso {
-  id          String          @id @default(cuid())
-  titulo      String
-  tipo        TipoCompromisso @default(OUTRO)
-  inicio      DateTime
-  fim         DateTime
-  diaInteiro  Boolean         @default(false) @map("dia_inteiro")
-  observacoes String?
-  criadoEm    DateTime        @default(now()) @map("criado_em")
-  atualizadoEm DateTime       @updatedAt @map("atualizado_em")
+  id           String          @id @default(cuid())
+  titulo       String
+  tipo         TipoCompromisso @default(OUTRO)
+  inicio       DateTime
+  fim          DateTime
+  diaInteiro   Boolean         @default(false) @map("dia_inteiro")
+  observacoes  String?
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @updatedAt @map("atualizado_em")
 
   responsavel       Usuario?         @relation("CompromissoResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
   responsavelId     String?          @map("responsavel_id")
@@ -635,13 +754,20 @@ model Compromisso {
 model Rota {
   id        String   @id @default(cuid())
   descricao String
+  nome      String   @default("")
   data      DateTime @db.Date
   criadoEm  DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @updatedAt @map("atualizado_em")
 
-  ativo            Boolean               @default(true)
-  responsavel      Usuario?              @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
-  responsavelId    String?               @map("responsavel_id")
+  ativo            Boolean    @default(true)
+  status           StatusRota @default(PENDENTE)
+  observacoes      String?
+  responsavel      Usuario?   @relation(fields: [responsavelId], references: [id], onDelete: SetNull)
+  responsavelId    String?    @map("responsavel_id")
+  promotor         Usuario?   @relation("RotaPromotor", fields: [promotorId], references: [id], onDelete: SetNull)
+  promotorId       String?    @map("promotor_id")
   estabelecimentos RotaEstabelecimento[]
+  paradas          RotaParada[]
 
   @@map("rotas")
 }
