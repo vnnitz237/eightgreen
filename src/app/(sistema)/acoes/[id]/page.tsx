@@ -7,6 +7,7 @@ import { CabecalhoPagina } from "@/componentes/compartilhados/cabecalho-pagina";
 import { Status } from "@/componentes/ui/status";
 import { formatarDataCurta, formatarMoeda } from "@/lib/formatadores";
 import { cancelarAcao, clonarAcao } from "@/funcionalidades/acoes/actions";
+import { BotaoSubmitConfirmacao } from "@/funcionalidades/acoes/botao-submit-confirmacao";
 import { prisma } from "@/lib/prisma";
 import type { StatusAcao } from "@/funcionalidades/acoes/tipos";
 
@@ -59,23 +60,21 @@ export default async function DetalheAcaoPage({ params }: { params: Promise<{ id
                   <Edit3 size={14} /> Editar
                 </Link>
                 <form action={clonar} style={{ display: "contents" }}>
-                  <button
-                    type="submit"
+                  <BotaoSubmitConfirmacao
                     className="bt-secundario"
                     style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    onClick={(e) => { if (!confirm("Clonar esta ação?")) e.preventDefault(); }}
+                    mensagem="Clonar esta ação?"
                   >
                     <Copy size={14} /> Clonar
-                  </button>
+                  </BotaoSubmitConfirmacao>
                 </form>
                 <form action={cancelar} style={{ display: "contents" }}>
-                  <button
-                    type="submit"
+                  <BotaoSubmitConfirmacao
                     className="bt-danger"
-                    onClick={(e) => { if (!confirm("Cancelar esta ação? Esta ação não poderá ser reaberta.")) e.preventDefault(); }}
+                    mensagem="Cancelar esta ação? Esta ação não poderá ser reaberta."
                   >
                     Cancelar ação
-                  </button>
+                  </BotaoSubmitConfirmacao>
                 </form>
               </>
             )}

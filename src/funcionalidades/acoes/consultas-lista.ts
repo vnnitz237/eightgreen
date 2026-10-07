@@ -54,7 +54,9 @@ export async function listarAcoesComFiltros(filtros: FiltrosAcao = {}) {
       orderBy: { data: "desc" },
       include: {
         distribuidora: { select: { id: true, nome: true } },
-        estabelecimento: { select: { id: true, nome: true } },
+        estabelecimento: {
+          select: { id: true, razaoSocial: true, nomeFantasia: true },
+        },
         produtos: { select: { id: true } },
         acaoDegustadoras: { select: { id: true } },
       },

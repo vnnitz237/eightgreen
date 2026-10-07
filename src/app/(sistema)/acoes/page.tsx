@@ -8,6 +8,7 @@ import { formatarDataCurta } from "@/lib/formatadores";
 import { listarAcoesComFiltros } from "@/funcionalidades/acoes/consultas-lista";
 import { listarDistribuidoras, listarEstabelecimentos } from "@/funcionalidades/cadastros/consultas";
 import { clonarAcao, cancelarAcao } from "@/funcionalidades/acoes/actions";
+import { BotaoSubmitConfirmacao } from "@/funcionalidades/acoes/botao-submit-confirmacao";
 import type { StatusAcao } from "@/funcionalidades/acoes/tipos";
 
 type SearchParams = Promise<{
@@ -143,7 +144,9 @@ export default async function AcoesPage({ searchParams }: { searchParams: Search
               </thead>
               <tbody>
                 {acoes.map((acao) => {
-                  const nomeEstab = acao.estabelecimento?.nome ?? acao.estabelecimentoAvulso ?? "—";
+                  const nomeEstab = acao.estabelecimento
+                    ? acao.estabelecimento.nomeFantasia ?? acao.estabelecimento.razaoSocial
+                    : acao.estabelecimentoAvulso ?? "—";
                   const clonar = clonarAcao.bind(null, acao.id);
                   const cancelar = cancelarAcao.bind(null, acao.id);
                   return (
@@ -169,25 +172,23 @@ export default async function AcoesPage({ searchParams }: { searchParams: Search
                             <Link href={`/acoes/${acao.id}/editar`} className="bt-link" style={{ fontSize: 11 }}>Editar</Link>
                           )}
                           <form action={clonar} style={{ display: "contents" }}>
-                            <button
-                              type="submit"
+                            <BotaoSubmitConfirmacao
                               className="bt-link"
                               style={{ fontSize: 11 }}
-                              onClick={(e) => { if (!confirm("Clonar esta ação?")) e.preventDefault(); }}
+                              mensagem="Clonar esta ação?"
                             >
                               Clonar
-                            </button>
+                            </BotaoSubmitConfirmacao>
                           </form>
                           {acao.status === "aberta" && (
                             <form action={cancelar} style={{ display: "contents" }}>
-                              <button
-                                type="submit"
+                              <BotaoSubmitConfirmacao
                                 className="bt-link"
                                 style={{ fontSize: 11, color: "var(--cor-erro)" }}
-                                onClick={(e) => { if (!confirm("Cancelar esta ação? Não poderá ser reaberta.")) e.preventDefault(); }}
+                                mensagem="Cancelar esta ação? Não poderá ser reaberta."
                               >
                                 Cancelar
-                              </button>
+                              </BotaoSubmitConfirmacao>
                             </form>
                           )}
                         </div>

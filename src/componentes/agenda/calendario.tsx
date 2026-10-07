@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { ModalCompromisso } from "./modal-compromisso";
 import type { CalendarEvent } from "@/types/agenda";
 
@@ -38,9 +38,9 @@ export function Calendario({ estabelecimentos, responsaveis }: Props) {
     setPluginsCarregados(true);
   }, []);
 
-  if (!pluginsCarregados) {
+  useEffect(() => {
     void inicializar();
-  }
+  }, [inicializar]);
 
   async function carregarEventos(inicio: string, fim: string) {
     const res = await fetch(`/api/agenda/eventos?de=${encodeURIComponent(inicio)}&ate=${encodeURIComponent(fim)}`);
